@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { useEffect, useState } from "react";
+import { ThemeIcon } from "@/components/ThemeIcon";
 import logoImg from "@assets/logo.jpg";
 import shankaraImg from "@assets/shankara.jpg";
 
@@ -134,15 +135,17 @@ export default function Landing() {
 
       {/* Features */}
       <div className="bg-card border-t border-border py-14 px-6">
-        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
-            { icon: "🔍", title: "Shravana — Listening", desc: "AI-guided exploration of Advaita concepts: Maya, Atman, Brahman, Avidya, and more. Texts, videos, and study maps." },
-            { icon: "📖", title: "Manana — Reflection", desc: "A personal diary to record your insights and reflections after each study session, building your own understanding over time." },
-            { icon: "🕉", title: "Nididhyasana — Satsang", desc: "Discuss with fellow seekers in Satsang groups. AI companion summarizes debates and connects key arguments." },
+            { icon: "shravana" as const, title: "Shravana — Listening", desc: "AI-guided exploration of Advaita concepts: Maya, Atman, Brahman, Avidya, and more. Texts, videos, and study maps." },
+            { icon: "manana" as const, title: "Manana — Reflection", desc: "A personal diary to record your insights and reflections after each study session, building your own understanding over time." },
+            { icon: "nididhyasana" as const, title: "Nididhyasana — Satsang", desc: "Discuss with fellow seekers in Satsang groups. AI companion summarizes debates and connects key arguments." },
           ].map(f => (
             <div key={f.title} className="text-center p-6">
-              <div className="text-4xl mb-4">{f.icon}</div>
-              <h3 className="font-serif text-base font-semibold mb-2">{f.title}</h3>
+              <div className="flex justify-center mb-5">
+                <ThemeIcon name={f.icon} size="lg" />
+              </div>
+              <h3 className="font-serif text-base font-semibold mb-2 text-foreground">{f.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
             </div>
           ))}

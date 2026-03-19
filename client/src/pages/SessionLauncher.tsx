@@ -2,16 +2,17 @@ import { Link, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { store, subscribe } from "@/lib/localStore";
 import type { Reflection } from "@shared/schema";
+import { ThemeIcon } from "@/components/ThemeIcon";
 
 const intents = [
-  { href: "/explore", icon: "🔍", title: "Explore a Concept", desc: "Browse Advaita concepts and dive into any topic with your AI companion.", color: "border-primary/40 hover:border-primary" },
-  { href: "/study-map", icon: "🗺", title: "Work on Study Map", desc: "Visualize how concepts connect — build your personal knowledge graph.", color: "border-secondary/60 hover:border-secondary" },
-  { href: "/read/maya", icon: "📚", title: "Read & Listen", desc: "Dive into classical texts and curated videos on a concept.", color: "border-accent/40 hover:border-accent" },
-  { href: "/diary", icon: "📖", title: "Write a Reflection", desc: "Record your insights, questions, and contemplations in your diary.", color: "border-primary/40 hover:border-primary" },
-  { href: "/satsang", icon: "🕉", title: "Join Satsang", desc: "Engage in philosophical discussion with fellow seekers.", color: "border-secondary/60 hover:border-secondary" },
-  { href: "/insights", icon: "✨", title: "Review Insights", desc: "See patterns across your reflections and AI-generated insights.", color: "border-accent/40 hover:border-accent" },
-  { href: "/assessment", icon: "🎯", title: "Take Assessment", desc: "Test your understanding with a focused quiz on a concept.", color: "border-primary/40 hover:border-primary" },
-  { href: "/go-deeper", icon: "🌊", title: "Go Deeper", desc: "Receive curated recommendations to advance your inquiry.", color: "border-secondary/60 hover:border-secondary" },
+  { href: "/explore",    icon: "explore"     as const, title: "Explore a Concept",  desc: "Browse Advaita concepts and dive into any topic with your AI companion." },
+  { href: "/study-map",  icon: "study-map"   as const, title: "Work on Study Map",  desc: "Visualize how concepts connect — build your personal knowledge graph." },
+  { href: "/read/maya",  icon: "read"        as const, title: "Read & Listen",       desc: "Dive into classical texts and curated videos on a concept." },
+  { href: "/diary",      icon: "diary"       as const, title: "Write a Reflection",  desc: "Record your insights, questions, and contemplations in your diary." },
+  { href: "/satsang",    icon: "satsang"     as const, title: "Join Satsang",        desc: "Engage in philosophical discussion with fellow seekers." },
+  { href: "/insights",   icon: "insights"    as const, title: "Review Insights",     desc: "See patterns across your reflections and AI-generated insights." },
+  { href: "/assessment", icon: "assessment"  as const, title: "Take Assessment",     desc: "Test your understanding with a focused quiz on a concept." },
+  { href: "/go-deeper",  icon: "go-deeper"   as const, title: "Go Deeper",           desc: "Receive curated recommendations to advance your inquiry." },
 ];
 
 const concepts = [
@@ -84,9 +85,9 @@ export default function SessionLauncher() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {intents.map(intent => (
           <Link key={intent.href} href={intent.href}>
-            <div className={`p-5 bg-card border-2 ${intent.color} rounded-xl cursor-pointer transition-all hover:shadow-md group`}>
+            <div className="p-5 bg-card border border-border rounded-xl cursor-pointer transition-all hover:shadow-md hover:border-primary/40 group">
               <div className="flex items-start gap-4">
-                <span className="text-2xl mt-0.5">{intent.icon}</span>
+                <ThemeIcon name={intent.icon} size="sm" />
                 <div>
                   <h3 className="font-serif text-sm font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">{intent.title}</h3>
                   <p className="text-xs text-muted-foreground leading-relaxed">{intent.desc}</p>
