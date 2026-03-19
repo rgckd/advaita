@@ -67,7 +67,7 @@ function AppShell() {
     { href: "/diary", label: "Diary", icon: "📖" },
     { href: "/satsang", label: "Satsang", icon: "🕉" },
     { href: "/insights", label: "Insights", icon: "✨" },
-    { href: "/assessment", label: "Assessment", icon: "📝" },
+    { href: "/assessment", label: "Assessment", icon: "🎯" },
   ];
 
   const journeySteps = [

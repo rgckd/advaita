@@ -65,25 +65,40 @@ export function FloatingNotes() {
 
   return (
     <>
-      {/* Floating trigger button */}
+      {/* Side-tab trigger — anchored to right edge, vertically centered */}
       <button
         onClick={() => setOpen(o => !o)}
-        className={`fixed bottom-5 right-5 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-lg transition-all hover:scale-110 ${
+        className={`fixed z-50 flex flex-col items-center justify-center gap-1 transition-all shadow-lg ${
           open
             ? "bg-primary text-primary-foreground"
-            : "bg-card border-2 border-primary/40 text-primary hover:border-primary"
+            : "bg-card border border-primary/30 text-primary hover:border-primary hover:bg-primary/5"
         }`}
+        style={{
+          right: open ? 320 : 0,
+          top: "38%",
+          borderRadius: open ? "8px 0 0 8px" : "8px 0 0 8px",
+          padding: "10px 6px",
+          writingMode: "vertical-rl",
+          fontSize: "11px",
+          fontWeight: 600,
+          letterSpacing: "0.04em",
+          lineHeight: 1.2,
+          border: open ? undefined : "1px solid",
+          borderRight: "none",
+        }}
         title="Quick Notes"
         data-testid="button-floating-notes"
       >
-        {open ? "✕" : "📝"}
+        <span style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", fontSize: "10px" }}>
+          {open ? "✕ Close" : "📝 Notes"}
+        </span>
       </button>
 
-      {/* Notes panel */}
+      {/* Notes panel — slides in from right edge */}
       {open && (
         <div
-          className="fixed bottom-20 right-5 z-50 w-80 bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-          style={{ maxHeight: "520px" }}
+          className="fixed z-50 bg-card border-l border-t border-b border-border shadow-2xl flex flex-col overflow-hidden"
+          style={{ right: 0, top: "10%", width: 320, maxHeight: "80vh", borderRadius: "12px 0 0 12px" }}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30 flex-shrink-0">

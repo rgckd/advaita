@@ -10,7 +10,7 @@ const intents = [
   { href: "/diary", icon: "📖", title: "Write a Reflection", desc: "Record your insights, questions, and contemplations in your diary.", color: "border-primary/40 hover:border-primary" },
   { href: "/satsang", icon: "🕉", title: "Join Satsang", desc: "Engage in philosophical discussion with fellow seekers.", color: "border-secondary/60 hover:border-secondary" },
   { href: "/insights", icon: "✨", title: "Review Insights", desc: "See patterns across your reflections and AI-generated insights.", color: "border-accent/40 hover:border-accent" },
-  { href: "/assessment", icon: "📝", title: "Take Assessment", desc: "Test your understanding with a focused quiz on a concept.", color: "border-primary/40 hover:border-primary" },
+  { href: "/assessment", icon: "🎯", title: "Take Assessment", desc: "Test your understanding with a focused quiz on a concept.", color: "border-primary/40 hover:border-primary" },
   { href: "/go-deeper", icon: "🌊", title: "Go Deeper", desc: "Receive curated recommendations to advance your inquiry.", color: "border-secondary/60 hover:border-secondary" },
 ];
 

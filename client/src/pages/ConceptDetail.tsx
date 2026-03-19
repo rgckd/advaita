@@ -89,7 +89,7 @@ export default function ConceptDetail() {
             </Link>
             <Link href="/assessment">
               <button className="px-4 py-2 bg-card border border-border text-foreground rounded-lg text-sm hover:bg-muted transition-colors" data-testid="button-take-quiz">
-                📝 Take Quiz
+                🎯 Take Quiz
               </button>
             </Link>
           </div>
