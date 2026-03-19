@@ -65,32 +65,29 @@ export function FloatingNotes() {
 
   return (
     <>
-      {/* Side-tab trigger — anchored to right edge, vertically centered */}
+      {/* Side-tab trigger — rotated label tab on right edge */}
       <button
         onClick={() => setOpen(o => !o)}
-        className={`fixed z-50 flex flex-col items-center justify-center gap-1 transition-all shadow-lg ${
+        className={`fixed z-50 flex items-center gap-2 shadow-lg font-semibold transition-all ${
           open
             ? "bg-primary text-primary-foreground"
-            : "bg-card border border-primary/30 text-primary hover:border-primary hover:bg-primary/5"
+            : "bg-primary/90 text-primary-foreground hover:bg-primary"
         }`}
         style={{
           right: open ? 320 : 0,
-          top: "38%",
-          borderRadius: open ? "8px 0 0 8px" : "8px 0 0 8px",
-          padding: "10px 6px",
-          writingMode: "vertical-rl",
-          fontSize: "11px",
-          fontWeight: 600,
-          letterSpacing: "0.04em",
-          lineHeight: 1.2,
-          border: open ? undefined : "1px solid",
-          borderRight: "none",
+          top: "40%",
+          padding: "10px 14px 10px 10px",
+          borderRadius: "10px 0 0 10px",
+          fontSize: "13px",
+          letterSpacing: "0.01em",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
         }}
         title="Quick Notes"
         data-testid="button-floating-notes"
       >
-        <span style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", fontSize: "10px" }}>
-          {open ? "✕ Close" : "📝 Notes"}
+        <span style={{ fontSize: "15px" }}>{open ? "✕" : "📝"}</span>
+        <span style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", fontSize: "12px", fontWeight: 700 }}>
+          {open ? "Close" : "Notes"}
         </span>
       </button>
 
