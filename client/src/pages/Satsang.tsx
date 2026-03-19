@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
-import { store, subscribe } from "@/lib/localStore";
-import type { Discussion } from "@shared/schema";
+import { store, subscribe, type DiscussionWithAttachment, type FileAttachment } from "@/lib/localStore";
 import { Link } from "wouter";
+import { AttachmentPicker, AttachmentDisplay } from "@/components/AttachmentPicker";
 
 export default function Satsang() {
-  const [discussions, setDiscussions] = useState<Discussion[]>(store.getDiscussions());
+  const [discussions, setDiscussions] = useState<DiscussionWithAttachment[]>(store.getDiscussions());
   const [topic, setTopic] = useState("");
   const [content, setContent] = useState("");
   const [author, setAuthor] = useState("Anonymous Seeker");
+  const [attachment, setAttachment] = useState<FileAttachment | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
 
@@ -15,15 +16,18 @@ export default function Satsang() {
 
   const post = () => {
     if (!topic.trim() || !content.trim()) return;
-    store.addDiscussion({ topic, author, content, createdAt: new Date().toISOString() });
-    setTopic(""); setContent(""); setShowForm(false);
+    store.addDiscussion(
+      { topic, author, content, createdAt: new Date().toISOString() },
+      attachment ?? undefined
+    );
+    setTopic(""); setContent(""); setAttachment(null); setShowForm(false);
   };
 
   const like = (id: number) => { store.likeDiscussion(id); };
 
-  const summarize = (d: Discussion) => {
+  const summarize = (d: DiscussionWithAttachment) => {
     setAiSummary(`This thread explores "${d.topic}". The central tension raised is between ${
-      d.topic.includes("Ajata") ? "Gaudapada's radical non-origination and Shankara's apparent creation — both are valid pointers: one as ultimate truth (Paramartha), the other as practical instruction (Vyavahara)." :
+      d.topic.includes("Ajata") ? "Gaudapada's radical non-origination and Shankara's Vivartavada — both are valid pointers: one as ultimate truth (Paramartha), the other as practical instruction (Vyavahara)." :
       d.topic.includes("Neti") ? "negation as a spiritual practice versus mere intellectualism. The tradition suggests Neti Neti works when it loosens false identification, not when it becomes another concept to hold." :
       "theory and lived practice. Without Viveka (discrimination), even correct philosophical understanding remains a concept rather than a realization."
     } Key concepts: Advaita, Brahman, Maya, Atman.`);
@@ -67,8 +71,12 @@ export default function Satsang() {
             className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50" />
           <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Share your perspective..." rows={4}
             className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none" />
+
+          {/* Attachment */}
+          <AttachmentPicker value={attachment} onChange={setAttachment} />
+
           <div className="flex gap-2 justify-end">
-            <button onClick={() => setShowForm(false)} className="px-4 py-2 bg-muted text-muted-foreground rounded-lg text-sm">Cancel</button>
+            <button onClick={() => { setShowForm(false); setAttachment(null); }} className="px-4 py-2 bg-muted text-muted-foreground rounded-lg text-sm">Cancel</button>
             <button onClick={post} disabled={!topic.trim() || !content.trim()}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm disabled:opacity-50 hover:opacity-90"
               data-testid="button-post-discussion">Post to Satsang</button>
@@ -87,6 +95,7 @@ export default function Satsang() {
                 <span className="text-xs text-muted-foreground">· {formatDate(d.createdAt)}</span>
               </div>
               <p className="text-sm text-foreground leading-relaxed">{d.content}</p>
+              {d.attachment && <AttachmentDisplay attachment={d.attachment} />}
             </div>
             <div className="px-5 py-3 border-t border-border bg-muted/20 flex items-center gap-3">
               <button onClick={() => like(d.id)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors">

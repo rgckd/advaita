@@ -1,21 +1,26 @@
 import { useState, useEffect } from "react";
-import { store, subscribe } from "@/lib/localStore";
-import type { Reflection } from "@shared/schema";
+import { store, subscribe, type ReflectionWithAttachment, type FileAttachment } from "@/lib/localStore";
 import { Link } from "wouter";
 import { CONCEPTS } from "./Explore";
+import { AttachmentPicker, AttachmentDisplay } from "@/components/AttachmentPicker";
 
 export default function Diary() {
-  const [reflections, setReflections] = useState<Reflection[]>(store.getReflections());
+  const [reflections, setReflections] = useState<ReflectionWithAttachment[]>(store.getReflections());
   const [content, setContent] = useState("");
   const [selectedConcept, setSelectedConcept] = useState("Maya");
+  const [attachment, setAttachment] = useState<FileAttachment | null>(null);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => subscribe(() => setReflections(store.getReflections())), []);
 
   const save = () => {
-    if (!content.trim()) return;
-    store.addReflection({ content, concept: selectedConcept, userId: 1, createdAt: new Date().toISOString() });
+    if (!content.trim() && !attachment) return;
+    store.addReflection(
+      { content, concept: selectedConcept, userId: 1, createdAt: new Date().toISOString() },
+      attachment ?? undefined
+    );
     setContent("");
+    setAttachment(null);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -54,9 +59,13 @@ export default function Diary() {
               className="w-full px-3 py-2.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none leading-relaxed"
               data-testid="textarea-reflection" />
           </div>
+
+          {/* Attachment */}
+          <AttachmentPicker value={attachment} onChange={setAttachment} />
+
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground">{content.length} characters</p>
-            <button onClick={save} disabled={!content.trim()}
+            <button onClick={save} disabled={!content.trim() && !attachment}
               className="px-5 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
               data-testid="button-save-reflection">
               Save Reflection
@@ -87,6 +96,7 @@ export default function Diary() {
                   <span className="text-xs text-muted-foreground">{formatDate(r.createdAt)}</span>
                 </div>
                 <p className="text-sm text-foreground leading-relaxed">{r.content}</p>
+                {r.attachment && <AttachmentDisplay attachment={r.attachment} />}
               </div>
             </div>
           ))}

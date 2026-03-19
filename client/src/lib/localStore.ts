@@ -1,6 +1,15 @@
 // In-memory store replacing the backend entirely
 import type { Reflection, Discussion, QuizResult } from "@shared/schema";
 
+// Shared attachment type — reused by Notes, Reflections, and Discussions
+export interface FileAttachment {
+  name: string;
+  size: number;
+  dataUrl: string;
+  mimeType: string;
+}
+
+/** @deprecated use FileAttachment */
 export interface NoteAttachment {
   name: string;      // original filename
   size: number;      // bytes
@@ -13,15 +22,19 @@ export interface Note {
   content: string;
   context: string; // page/concept the note was taken on
   createdAt: string;
-  attachment?: NoteAttachment;
+  attachment?: FileAttachment;
 }
 
-let reflections: Reflection[] = [
+// Augmented versions that add optional attachment to the DB-derived types
+export type ReflectionWithAttachment = Reflection & { attachment?: FileAttachment };
+export type DiscussionWithAttachment = Discussion & { attachment?: FileAttachment };
+
+let reflections: ReflectionWithAttachment[] = [
   { id: 1, userId: 1, concept: "Maya", content: "Maya is not mere illusion in the simple sense — it is the creative power of Brahman that makes the One appear as many. The world is not false, but its independent reality is what is illusory.", createdAt: "2026-03-15T08:00:00Z" },
   { id: 2, userId: 1, concept: "Atman", content: "The Atman is not the mind, not the body, not even the ego that says 'I think'. It is the witness behind all thought — pure consciousness itself.", createdAt: "2026-03-17T10:30:00Z" },
 ];
 
-let discussions: Discussion[] = [
+let discussions: DiscussionWithAttachment[] = [
   { id: 1, topic: "Is Ajata Vada compatible with Shankara's Vivartavada?", author: "Ramesh S.", content: "Ajata Vada (non-origination) as taught in Mandukya Karika seems to deny creation entirely, while Shankara's Vivartavada accepts the world as Brahman appearing differently. Can these be reconciled?", likes: 12, createdAt: "2026-03-16T14:00:00Z" },
   { id: 2, topic: "Practical implications of Neti Neti in daily meditation", author: "Priya M.", content: "I have been practicing Neti Neti — 'not this, not this' — and find it creates a peculiar detachment from both external events and internal emotional reactions. Has anyone explored this as an active inquiry rather than passive negation?", likes: 8, createdAt: "2026-03-17T09:00:00Z" },
   { id: 3, topic: "The role of Viveka (discrimination) in Advaita practice", author: "Arun K.", content: "Shankara insists Viveka — discrimination between the eternal and non-eternal — is the first qualification for serious inquiry. Yet in our daily lives, how do we cultivate this without becoming world-denying?", likes: 15, createdAt: "2026-03-18T07:00:00Z" },
@@ -38,16 +51,16 @@ export function subscribe(fn: Listener) { listeners.add(fn); return () => listen
 function notify() { listeners.forEach(fn => fn()); }
 
 export const store = {
-  getReflections: () => [...reflections].reverse(),
-  addReflection: (r: Omit<Reflection, "id">) => {
-    const item: Reflection = { ...r, id: nextId.r++ };
+  getReflections: () => [...reflections].reverse() as ReflectionWithAttachment[],
+  addReflection: (r: Omit<Reflection, "id">, attachment?: FileAttachment) => {
+    const item: ReflectionWithAttachment = { ...r, id: nextId.r++, attachment };
     reflections.push(item);
     notify();
     return item;
   },
-  getDiscussions: () => [...discussions],
-  addDiscussion: (d: Omit<Discussion, "id" | "likes">) => {
-    const item: Discussion = { ...d, id: nextId.d++, likes: 0 };
+  getDiscussions: () => [...discussions] as DiscussionWithAttachment[],
+  addDiscussion: (d: Omit<Discussion, "id" | "likes">, attachment?: FileAttachment) => {
+    const item: DiscussionWithAttachment = { ...d, id: nextId.d++, likes: 0, attachment };
     discussions.push(item);
     notify();
     return item;
@@ -65,7 +78,7 @@ export const store = {
     return item;
   },
   getNotes: () => [...notes].reverse(),
-  addNote: (content: string, context: string, attachment?: NoteAttachment) => {
+  addNote: (content: string, context: string, attachment?: FileAttachment) => {
     const item: Note = { id: nextId.n++, content, context, createdAt: new Date().toISOString(), attachment };
     notes.push(item);
     notify();

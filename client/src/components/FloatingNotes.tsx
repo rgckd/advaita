@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useHashLocation } from "wouter/use-hash-location";
-import { store, subscribe, type Note, type NoteAttachment } from "@/lib/localStore";
-
-const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB
+import { store, subscribe, type Note, type FileAttachment } from "@/lib/localStore";
+import { AttachmentPicker, AttachmentDisplay } from "@/components/AttachmentPicker";
 
 // Derive a human-readable context label from the current route
 function routeLabel(location: string): string {
@@ -19,20 +18,6 @@ function routeLabel(location: string): string {
   return "General";
 }
 
-function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function fileIcon(mimeType: string) {
-  if (mimeType.startsWith("image/")) return "🖼";
-  if (mimeType === "application/pdf") return "📄";
-  if (mimeType.includes("word") || mimeType.includes("document")) return "📝";
-  if (mimeType.includes("spreadsheet") || mimeType.includes("excel")) return "📊";
-  return "📎";
-}
-
 export function FloatingNotes() {
   const [location] = useHashLocation();
   const [open, setOpen] = useState(false);
@@ -41,10 +26,8 @@ export function FloatingNotes() {
   const [notes, setNotes] = useState<Note[]>(store.getNotes());
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState("");
-  const [attachment, setAttachment] = useState<NoteAttachment | null>(null);
-  const [attachError, setAttachError] = useState<string | null>(null);
+  const [attachment, setAttachment] = useState<FileAttachment | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => subscribe(() => setNotes(store.getNotes())), []);
 
@@ -58,35 +41,11 @@ export function FloatingNotes() {
   const context = routeLabel(location);
   const currentNotes = notes.filter(n => n.context === context);
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setAttachError(null);
-    if (file.size > MAX_FILE_BYTES) {
-      setAttachError(`File too large (${formatBytes(file.size)}). Max 5 MB.`);
-      e.target.value = "";
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setAttachment({
-        name: file.name,
-        size: file.size,
-        dataUrl: reader.result as string,
-        mimeType: file.type,
-      });
-    };
-    reader.readAsDataURL(file);
-    // reset input so the same file can be re-selected after removal
-    e.target.value = "";
-  }
-
   function saveNote() {
     if (!draft.trim() && !attachment) return;
     store.addNote(draft.trim(), context, attachment ?? undefined);
     setDraft("");
     setAttachment(null);
-    setAttachError(null);
   }
 
   function startEdit(note: Note) {
@@ -185,46 +144,7 @@ export function FloatingNotes() {
               />
 
               {/* Attachment area */}
-              <div className="px-4 pb-2 flex-shrink-0">
-                {/* Hidden file input */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.md,.jpg,.jpeg,.png,.gif,.webp"
-                  onChange={handleFileChange}
-                  className="hidden"
-                  data-testid="input-note-attachment"
-                />
-
-                {attachment ? (
-                  /* Attachment preview chip */
-                  <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 border border-border rounded-lg text-xs">
-                    <span className="text-base flex-shrink-0">{fileIcon(attachment.mimeType)}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground truncate">{attachment.name}</p>
-                      <p className="text-muted-foreground">{formatBytes(attachment.size)}</p>
-                    </div>
-                    <button
-                      onClick={() => setAttachment(null)}
-                      className="text-muted-foreground hover:text-destructive transition-colors flex-shrink-0 text-sm"
-                      title="Remove attachment"
-                    >✕</button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary transition-colors py-1"
-                    title="Attach a file (max 5 MB)"
-                  >
-                    <span>📎</span>
-                    <span>Attach file <span className="opacity-60">— PDF, image, doc (max 5 MB)</span></span>
-                  </button>
-                )}
-
-                {attachError && (
-                  <p className="text-[10px] text-destructive mt-1">{attachError}</p>
-                )}
-              </div>
+              <AttachmentPicker value={attachment} onChange={setAttachment} className="px-4 pb-2 flex-shrink-0" />
 
               <div className="px-4 pb-3 flex items-center justify-between border-t border-border pt-2 flex-shrink-0">
                 <span className="text-[10px] text-muted-foreground">⌘/Ctrl+Enter to save</span>
@@ -335,32 +255,7 @@ function NoteCard({
             {note.content && (
               <p className="text-xs text-foreground leading-relaxed whitespace-pre-wrap">{note.content}</p>
             )}
-            {/* Attachment display */}
-            {note.attachment && (
-              <div className="mt-1.5">
-                {note.attachment.mimeType.startsWith("image/") ? (
-                  <a href={note.attachment.dataUrl} target="_blank" rel="noopener noreferrer" title="Open image">
-                    <img
-                      src={note.attachment.dataUrl}
-                      alt={note.attachment.name}
-                      className="max-w-full rounded border border-border"
-                      style={{ maxHeight: "80px", objectFit: "cover" }}
-                    />
-                  </a>
-                ) : (
-                  <a
-                    href={note.attachment.dataUrl}
-                    download={note.attachment.name}
-                    className="flex items-center gap-1.5 px-2 py-1.5 bg-muted/50 border border-border rounded-md text-[10px] text-foreground hover:bg-muted transition-colors"
-                    title={`Download ${note.attachment.name}`}
-                  >
-                    <span className="text-sm">{fileIcon(note.attachment.mimeType)}</span>
-                    <span className="truncate font-medium">{note.attachment.name}</span>
-                    <span className="text-muted-foreground flex-shrink-0">{formatBytes(note.attachment.size)}</span>
-                  </a>
-                )}
-              </div>
-            )}
+            {note.attachment && <AttachmentDisplay attachment={note.attachment} />}
           </div>
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 pt-0.5">
             <button onClick={() => onEdit(note)} className="text-muted-foreground hover:text-primary transition-colors text-[11px]" title="Edit">✏</button>
