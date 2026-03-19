@@ -142,41 +142,61 @@ export default function ReadListen() {
             </div>
           ))}
           <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl text-xs text-amber-800 dark:text-amber-300">
-            <strong>Source:</strong> These are excerpts for study purposes. Full texts are available at <a href="https://lists.advaita-vedanta.org/archives/advaita-l/" target="_blank" rel="noopener noreferrer" className="underline">Advaita-L Archive</a>.
+            <strong>Source:</strong> These are excerpts for study purposes. Search the{" "}
+            <a
+              href={`https://www.google.com/search?q=site:lists.advaita-vedanta.org+advaita-l+${encodeURIComponent(concept.name)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline font-medium"
+            >
+              Advaita-L Archive threads on {concept.name}
+            </a>
+            {" "}for scholarly discussions spanning decades.
           </div>
         </div>
       )}
 
       {tab === "videos" && (
-        <div className="space-y-5">
+        <div className="space-y-4">
           {content.videos.map((video, i) => (
             <div key={i} className="bg-card border border-border rounded-xl overflow-hidden">
-              <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-                <div>
-                  <h2 className="font-serif text-sm font-semibold text-foreground">{video.title}</h2>
-                  <p className="text-xs text-muted-foreground">{video.channel}</p>
+              <div className="px-4 py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="font-serif text-sm font-semibold text-foreground leading-snug">{video.title}</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">{video.channel}</p>
                 </div>
-                <button
-                  onClick={() => setActiveVideo(activeVideo === video.youtubeId ? null : video.youtubeId)}
-                  className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs hover:opacity-90 transition-opacity"
+                <a
+                  href={`https://www.youtube.com/watch?v=${video.youtubeId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs hover:opacity-90 transition-opacity"
                   data-testid={`button-play-${video.youtubeId}`}
                 >
-                  {activeVideo === video.youtubeId ? "Close" : "▶ Play"}
-                </button>
+                  <span>▶</span> Watch
+                </a>
               </div>
-              {activeVideo === video.youtubeId && (
-                <div className="aspect-video">
-                  <iframe
-                    src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1`}
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    title={video.title}
-                  />
+              {/* Thumbnail preview */}
+              <a
+                href={`https://www.youtube.com/watch?v=${video.youtubeId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block relative group"
+              >
+                <img
+                  src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`}
+                  alt={video.title}
+                  className="w-full object-cover"
+                  style={{ maxHeight: "180px" }}
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-white text-4xl">▶</span>
                 </div>
-              )}
+              </a>
             </div>
           ))}
+          <p className="text-xs text-muted-foreground text-center pt-1">
+            Videos open in YouTube. Inline playback is subject to YouTube's embed restrictions.
+          </p>
         </div>
       )}
 

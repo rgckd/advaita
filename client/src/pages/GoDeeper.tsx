@@ -11,6 +11,7 @@ const paths = [
     action: "/read/brahman",
     actionLabel: "Read Texts",
     concept: "brahman",
+    archiveSearch: "Mahavakyas Brahman Tat Tvam Asi",
   },
   {
     title: "Practice: Neti Neti Inquiry",
@@ -20,6 +21,7 @@ const paths = [
     action: "/diary",
     actionLabel: "Write Reflection",
     concept: null,
+    archiveSearch: "Neti Neti inquiry Atman",
   },
   {
     title: "Explore: Gaudapada's Mandukya Karika",
@@ -29,6 +31,7 @@ const paths = [
     action: "/explore/ajata-vada",
     actionLabel: "Explore Ajata Vada",
     concept: "ajata-vada",
+    archiveSearch: "Gaudapada Mandukya Karika Ajata Vada",
   },
   {
     title: "Discuss: Is liberation an event or a recognition?",
@@ -38,6 +41,7 @@ const paths = [
     action: "/satsang",
     actionLabel: "Join Satsang",
     concept: null,
+    archiveSearch: "Moksha liberation Avidya Shankara",
   },
   {
     title: "Map: Connect Adhyasa to your new insights",
@@ -47,6 +51,7 @@ const paths = [
     action: "/study-map",
     actionLabel: "Open Study Map",
     concept: null,
+    archiveSearch: "Adhyasa superimposition Maya Avidya",
   },
 ];
 
@@ -101,7 +106,7 @@ export default function GoDeeper() {
                   <p className="text-sm text-foreground leading-relaxed mt-1.5">{path.desc}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <Link href={path.action}>
                   <button
                     className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:opacity-90 transition-opacity"
@@ -115,6 +120,14 @@ export default function GoDeeper() {
                     <span className="text-xs text-primary hover:underline cursor-pointer">Explore concept</span>
                   </Link>
                 )}
+                <a
+                  href={`https://www.google.com/search?q=site:lists.advaita-vedanta.org+${encodeURIComponent(path.archiveSearch)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-muted-foreground hover:text-primary hover:underline transition-colors"
+                >
+                  📌 Advaita-L threads
+                </a>
               </div>
             </div>
           </div>
@@ -126,13 +139,21 @@ export default function GoDeeper() {
         <h2 className="font-serif text-sm font-semibold mb-3 text-foreground">External Resources</h2>
         <div className="space-y-2 text-sm">
           <a
-            href="https://lists.advaita-vedanta.org/archives/advaita-l/2024/"
+            href="https://www.google.com/search?q=site:lists.advaita-vedanta.org+advaita-l+Advaita+Vedanta+Shankara"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 text-primary hover:underline"
             data-testid="link-advaita-l"
           >
-            📋 Advaita-L Discussion Threads (derived from this archive)
+            📋 Search Advaita-L Archives (Google site search)
+          </a>
+          <a
+            href="https://lists.advaita-vedanta.org/archives/advaita-l/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-primary hover:underline"
+          >
+            🗂 Advaita-L Full Archive Index
           </a>
           <a
             href="https://www.vedantasociety-chicago.org/"
