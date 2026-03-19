@@ -3,6 +3,11 @@ import { useHashLocation } from "wouter/use-hash-location";
 import { store, subscribe, type Note, type FileAttachment } from "@/lib/localStore";
 import { AttachmentPicker, AttachmentDisplay } from "@/components/AttachmentPicker";
 
+// Pages that have their own built-in writing form — Notes tab is hidden there
+// to avoid confusion between "Quick Notes" (private scratchpad) and the page's
+// primary action (Reflection Diary entry / Satsang thread).
+const SUPPRESS_ON = ["/diary", "/satsang"];
+
 // Derive a human-readable context label from the current route
 function routeLabel(location: string): string {
   if (location.startsWith("/explore/")) return `Concept: ${location.replace("/explore/", "")}`;
@@ -66,6 +71,9 @@ export function FloatingNotes() {
     return acc;
   }, {});
 
+  // Don't render on pages that already have their own primary writing form
+  if (SUPPRESS_ON.includes(location)) return null;
+
   return (
     <>
       {/* Side-tab trigger — rotated label tab on right edge */}
@@ -104,7 +112,8 @@ export function FloatingNotes() {
           <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30 flex-shrink-0">
             <div>
               <p className="text-xs font-bold text-foreground">Quick Notes</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5 truncate max-w-[180px]">
+              <p className="text-[10px] text-muted-foreground/80 leading-tight mb-0.5">Private scratchpad — not saved to Diary</p>
+              <p className="text-[10px] text-muted-foreground truncate max-w-[180px]">
                 📍 {context}
                 {currentNotes.length > 0 && (
                   <span className="ml-1 text-primary">· {currentNotes.length} note{currentNotes.length !== 1 ? "s" : ""} here</span>
@@ -137,7 +146,7 @@ export function FloatingNotes() {
                 onKeyDown={e => {
                   if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) saveNote();
                 }}
-                placeholder={`Jot a note about ${context}…\n\nCmd/Ctrl+Enter to save`}
+                placeholder={`Jot a quick note while you study ${context}\u2026\n\nThis is a private scratchpad. Use the Diary for deeper reflections.\n\nCmd/Ctrl+Enter to save`}
                 className="flex-1 resize-none px-4 py-3 text-sm text-foreground bg-transparent placeholder:text-muted-foreground/60 focus:outline-none border-none"
                 style={{ minHeight: "120px", maxHeight: "180px" }}
                 data-testid="textarea-quick-note"
@@ -147,7 +156,9 @@ export function FloatingNotes() {
               <AttachmentPicker value={attachment} onChange={setAttachment} className="px-4 pb-2 flex-shrink-0" />
 
               <div className="px-4 pb-3 flex items-center justify-between border-t border-border pt-2 flex-shrink-0">
-                <span className="text-[10px] text-muted-foreground">⌘/Ctrl+Enter to save</span>
+                <a href="#/diary" className="text-[10px] text-primary/70 hover:text-primary transition-colors" title="Go to Reflection Diary">
+                  📖 Open Diary
+                </a>
                 <button
                   onClick={saveNote}
                   disabled={!draft.trim() && !attachment}
