@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { store, subscribe } from "@/lib/localStore";
 import type { Reflection } from "@shared/schema";
@@ -14,16 +14,65 @@ const intents = [
   { href: "/go-deeper", icon: "🌊", title: "Go Deeper", desc: "Receive curated recommendations to advance your inquiry.", color: "border-secondary/60 hover:border-secondary" },
 ];
 
+const concepts = [
+  "Maya", "Brahman", "Atman", "Avidya", "Vivartavada",
+  "Pramana", "Advaita", "Jiva", "Turiya", "Nirguna",
+  "Saguna", "Moksha", "Lila", "Samsara", "Karma",
+  "Upanishads", "Bhashya", "Neti Neti", "Tat Tvam Asi", "Aham Brahmasmi",
+];
+
 export default function SessionLauncher() {
   const [reflections, setReflections] = useState<Reflection[]>(store.getReflections());
   useEffect(() => subscribe(() => setReflections(store.getReflections())), []);
   const lastReflection = reflections[0];
+  const [searchQuery, setSearchQuery] = useState("");
+  const [, navigate] = useLocation();
+
+  const filteredConcepts = searchQuery.trim().length > 0
+    ? concepts.filter(c => c.toLowerCase().includes(searchQuery.toLowerCase()))
+    : [];
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-10">
       <div className="mb-8">
         <h1 className="font-serif text-2xl font-bold text-foreground mb-1">Welcome back, Seeker</h1>
         <p className="text-muted-foreground text-sm">What calls you today?</p>
+
+        {/* Search bar */}
+        <div className="relative mt-4">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-base pointer-events-none">🔍</span>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === "Enter" && filteredConcepts.length > 0) {
+                navigate(`/explore/${filteredConcepts[0].toLowerCase()}`);
+                setSearchQuery("");
+              }
+            }}
+            placeholder="Search a concept — Maya, Brahman, Atman…"
+            className="w-full pl-9 pr-4 py-2.5 bg-card border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow"
+            data-testid="input-concept-search"
+          />
+          {filteredConcepts.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl shadow-lg overflow-hidden z-50">
+              {filteredConcepts.slice(0, 6).map(concept => (
+                <button
+                  key={concept}
+                  onClick={() => {
+                    navigate(`/explore/${concept.toLowerCase()}`);
+                    setSearchQuery("");
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+                  data-testid={`search-result-${concept.toLowerCase()}`}
+                >
+                  {concept}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         {lastReflection && (
           <div className="mt-4 p-4 ai-bubble rounded-lg">
             <p className="text-xs font-medium text-primary mb-1">Your last reflection — {lastReflection.concept}</p>

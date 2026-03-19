@@ -46,6 +46,17 @@ function AppShell() {
     { href: "/assessment", label: "Assessment", icon: "📝" },
   ];
 
+  const journeySteps = [
+    { label: "Curiosity", href: "/launch", num: 1 },
+    { label: "Exploration", href: "/explore", num: 2 },
+    { label: "Study Maps", href: "/study-map", num: 3 },
+    { label: "Read & Listen", href: "/read/maya", num: 4 },
+    { label: "Reflection", href: "/diary", num: 5 },
+    { label: "Satsang", href: "/satsang", num: 6 },
+    { label: "Insights", href: "/insights", num: 7 },
+    { label: "Assessment", href: "/assessment", num: 8 },
+  ];
+
   if (isFullScreen) {
     return (
       <Switch>
@@ -79,6 +90,41 @@ function AppShell() {
               </div>
             </Link>
           ))}
+
+          {/* Learning Journey mini-map */}
+          <div className="mx-2 mt-4 mb-2 px-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Learning Journey</p>
+            <div className="flex flex-col gap-0">
+              {journeySteps.map((step, i) => (
+                <Link key={step.href} href={step.href}>
+                  <div className={`flex items-center gap-2 py-1 px-1 rounded cursor-pointer transition-colors ${
+                    location.startsWith(step.href)
+                      ? "text-primary font-medium"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}>
+                    <span className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                      location.startsWith(step.href)
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    }`}>{step.num}</span>
+                    <span className="text-xs leading-tight">{step.label}</span>
+                    {i < journeySteps.length - 1 && (
+                      <span className="sr-only">→</span>
+                    )}
+                  </div>
+                  {i < journeySteps.length - 1 && (
+                    <div className="ml-2.5 w-px h-2 bg-border" />
+                  )}
+                </Link>
+              ))}
+              {/* Post-assessment paths */}
+              <div className="ml-2.5 w-px h-2 bg-border" />
+              <div className="flex items-center gap-1 py-1 px-1">
+                <span className="flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold bg-muted text-muted-foreground">↺</span>
+                <span className="text-[10px] text-muted-foreground leading-tight">Go Deeper / Explore</span>
+              </div>
+            </div>
+          </div>
         </nav>
         <div className="border-t border-border">
           <img
@@ -88,7 +134,8 @@ function AppShell() {
             style={{ maxHeight: "180px", objectPosition: "top" }}
           />
           <div className="p-3">
-            <p className="text-xs text-center text-muted-foreground italic mb-2">Adi Shankaracharya</p>
+            <p className="font-serif text-xs text-center text-primary font-semibold leading-tight">वन्दे गुरु परम्पराम् ॥</p>
+            <p className="text-[10px] text-center text-muted-foreground italic leading-tight mt-0.5 mb-2">Vande Guru Paramparam — I bow to the lineage of teachers</p>
             <button
               onClick={() => setDark(d => !d)}
               className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"

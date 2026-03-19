@@ -27,8 +27,13 @@ export default function Landing() {
       {/* Hero */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-16 text-center">
 
-        {/* Logo — uploaded image */}
-        <img src={logoImg} alt="adv.ai.ta" className="w-48 h-auto mb-8" />
+        {/* Logo — uploaded image, transparent-bg trick via mix-blend-mode */}
+        <img
+          src={logoImg}
+          alt="adv.ai.ta"
+          className="w-48 h-auto mb-8 dark:invert"
+          style={{ mixBlendMode: "multiply" }}
+        />
 
         <blockquote className="max-w-xl mx-auto mb-10 px-6 py-5 bg-card border border-border rounded-xl">
           <p className="font-serif text-lg italic text-foreground mb-2">"{quote.text}"</p>
@@ -39,7 +44,7 @@ export default function Landing() {
         <div className="max-w-sm w-full mx-auto mb-10 rounded-xl overflow-hidden border border-border shadow-md">
           <img src={shankaraImg} alt="Adi Shankaracharya teaching his disciples" className="w-full h-48 object-cover object-top" />
           <div className="py-3 px-4 bg-card text-center">
-            <p className="font-serif text-sm font-semibold text-primary">वन्दे गुरु परम्पराम्</p>
+            <p className="font-serif text-sm font-semibold text-primary">वन्दे गुरु परम्पराम् ॥</p>
             <p className="text-xs text-muted-foreground italic mt-0.5">Vande Guru Paramparam — I bow to the lineage of teachers</p>
           </div>
         </div>
