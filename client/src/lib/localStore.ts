@@ -1,6 +1,13 @@
 // In-memory store replacing the backend entirely
 import type { Reflection, Discussion, QuizResult } from "@shared/schema";
 
+export interface Note {
+  id: number;
+  content: string;
+  context: string; // page/concept the note was taken on
+  createdAt: string;
+}
+
 let reflections: Reflection[] = [
   { id: 1, userId: 1, concept: "Maya", content: "Maya is not mere illusion in the simple sense — it is the creative power of Brahman that makes the One appear as many. The world is not false, but its independent reality is what is illusory.", createdAt: "2026-03-15T08:00:00Z" },
   { id: 2, userId: 1, concept: "Atman", content: "The Atman is not the mind, not the body, not even the ego that says 'I think'. It is the witness behind all thought — pure consciousness itself.", createdAt: "2026-03-17T10:30:00Z" },
@@ -13,7 +20,8 @@ let discussions: Discussion[] = [
 ];
 
 let quizResults: QuizResult[] = [];
-let nextId = { r: 3, d: 4, q: 1 };
+let notes: Note[] = [];
+let nextId = { r: 3, d: 4, q: 1, n: 1 };
 
 // Listeners for reactivity
 type Listener = () => void;
@@ -47,6 +55,21 @@ export const store = {
     quizResults.push(item);
     notify();
     return item;
+  },
+  getNotes: () => [...notes].reverse(),
+  addNote: (content: string, context: string) => {
+    const item: Note = { id: nextId.n++, content, context, createdAt: new Date().toISOString() };
+    notes.push(item);
+    notify();
+    return item;
+  },
+  deleteNote: (id: number) => {
+    notes = notes.filter(n => n.id !== id);
+    notify();
+  },
+  updateNote: (id: number, content: string) => {
+    const n = notes.find(x => x.id === id);
+    if (n) { n.content = content; notify(); }
   },
   aiChat: (concept: string, _message: string): Promise<string> => {
     const responses: Record<string, string[]> = {

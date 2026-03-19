@@ -17,6 +17,7 @@ import Assessment from "@/pages/Assessment";
 import GoDeeper from "@/pages/GoDeeper";
 import NotFound from "@/pages/not-found";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
+import { FloatingNotes } from "@/components/FloatingNotes";
 import logoImg from "@assets/logo.jpg";
 import shankaraImg from "@assets/shankara.jpg";
 
@@ -185,6 +186,9 @@ function AppShell() {
           </div>
         </div>
       </aside>
+
+      {/* Floating Notes — available on every app page */}
+      <FloatingNotes />
 
       {/* Main content */}
       <main className="flex-1 overflow-y-auto">
