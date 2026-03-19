@@ -1,10 +1,23 @@
 import { Link } from "wouter";
-import { LotusSVG } from "@/App";
+import logoImg from "@assets/logo.jpg";
+import shankaraImg from "@assets/shankara.jpg";
 
 const quotes = [
   { text: "Ekam evadvitiyam — One only, without a second.", source: "Chandogya Upanishad 6.2.1" },
   { text: "Brahma satyam jagan mithya jivo brahmaiva naparah — Brahman is real, the world is apparently real, the individual self is none other than Brahman.", source: "Adi Shankaracharya" },
   { text: "Prajnanam Brahma — Consciousness is Brahman.", source: "Aitareya Upanishad 3.3" },
+];
+
+// Journey steps with circular flow: post-Assessment → two paths
+const journeySteps = [
+  { label: "Curiosity", href: "/launch" },
+  { label: "Exploration", href: "/explore" },
+  { label: "Study Maps", href: "/study-map" },
+  { label: "Reading & Listening", href: "/read/maya" },
+  { label: "Reflection", href: "/diary" },
+  { label: "Satsang", href: "/satsang" },
+  { label: "Insights", href: "/insights" },
+  { label: "Assessment", href: "/assessment" },
 ];
 
 export default function Landing() {
@@ -13,16 +26,22 @@ export default function Landing() {
     <div className="min-h-screen flex flex-col mandala-bg">
       {/* Hero */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-16 text-center">
-        <LotusSVG className="w-20 h-20 mb-6" />
-        <h1 className="font-serif text-5xl font-bold text-primary mb-2 tracking-tight">adv.ai.ta</h1>
-        <p className="text-lg text-muted-foreground font-light tracking-widest mb-10 uppercase text-sm">
-          Explore &bull; Reflect &bull; Realize
-        </p>
 
-        <blockquote className="max-w-xl mx-auto mb-12 px-6 py-5 bg-card border border-border rounded-xl">
+        {/* Logo — uploaded image */}
+        <img src={logoImg} alt="adv.ai.ta" className="w-48 h-auto mb-8" />
+
+        <blockquote className="max-w-xl mx-auto mb-10 px-6 py-5 bg-card border border-border rounded-xl">
           <p className="font-serif text-lg italic text-foreground mb-2">"{quote.text}"</p>
           <cite className="text-xs text-muted-foreground not-italic">— {quote.source}</cite>
         </blockquote>
+
+        {/* Shankara image */}
+        <div className="max-w-sm w-full mx-auto mb-10 rounded-xl overflow-hidden border border-border shadow-md">
+          <img src={shankaraImg} alt="Adi Shankaracharya teaching his disciples" className="w-full h-48 object-cover object-top" />
+          <p className="text-xs text-center text-muted-foreground italic py-2 bg-card">
+            Adi Shankaracharya — the founder of Advaita Vedanta
+          </p>
+        </div>
 
         <p className="max-w-lg text-base text-muted-foreground mb-10 leading-relaxed">
           A personalized AI companion for the study of <strong className="text-foreground">Advaita Vedanta</strong> — 
@@ -39,16 +58,39 @@ export default function Landing() {
           </button>
         </Link>
 
-        {/* Journey steps */}
+        {/* Journey steps — circular flow diagram */}
         <div className="mt-16 max-w-3xl w-full">
           <h2 className="font-serif text-xl text-foreground mb-6">The Learning Journey</h2>
-          <div className="flex flex-wrap justify-center gap-3 text-sm">
-            {["Curiosity", "Exploration", "Study Maps", "Reading & Listening", "Reflection", "Satsang", "Insights", "Assessment", "Go Deeper"].map((step, i, arr) => (
-              <span key={step} className="flex items-center gap-2">
-                <span className="px-3 py-1.5 bg-card border border-border rounded-full text-foreground">{step}</span>
-                {i < arr.length - 1 && <span className="text-muted-foreground">→</span>}
+          {/* Linear steps 1–8 */}
+          <div className="flex flex-wrap justify-center gap-3 text-sm mb-4">
+            {journeySteps.map((step, i) => (
+              <span key={step.label} className="flex items-center gap-2">
+                <Link href={step.href}>
+                  <span className="px-3 py-1.5 bg-card border border-border rounded-full text-foreground hover:bg-primary/10 hover:border-primary/40 transition-colors cursor-pointer">
+                    {step.label}
+                  </span>
+                </Link>
+                {i < journeySteps.length - 1 && <span className="text-muted-foreground">→</span>}
               </span>
             ))}
+          </div>
+
+          {/* Post-Assessment fork */}
+          <div className="flex flex-col items-center gap-2 mt-2">
+            <span className="text-muted-foreground text-sm">↓ After Assessment, two paths:</span>
+            <div className="flex items-center gap-4 flex-wrap justify-center">
+              <Link href="/go-deeper">
+                <span className="flex items-center gap-2 px-4 py-2 bg-primary/10 border-2 border-primary/40 rounded-full text-primary text-sm font-medium hover:bg-primary/20 transition-colors cursor-pointer">
+                  Go Deeper → Study Maps ↺
+                </span>
+              </Link>
+              <span className="text-muted-foreground text-xs">or</span>
+              <Link href="/explore">
+                <span className="flex items-center gap-2 px-4 py-2 bg-card border-2 border-border rounded-full text-foreground text-sm hover:bg-muted transition-colors cursor-pointer">
+                  Explore More Concepts →
+                </span>
+              </Link>
+            </div>
           </div>
         </div>
       </div>

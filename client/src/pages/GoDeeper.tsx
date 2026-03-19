@@ -126,13 +126,13 @@ export default function GoDeeper() {
         <h2 className="font-serif text-sm font-semibold mb-3 text-foreground">External Resources</h2>
         <div className="space-y-2 text-sm">
           <a
-            href="https://lists.advaita-vedanta.org/archives/advaita-l/"
+            href="https://lists.advaita-vedanta.org/archives/advaita-l/2024/"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 text-primary hover:underline"
             data-testid="link-advaita-l"
           >
-            📋 Advaita-L Mailing List Archive
+            📋 Advaita-L Discussion Threads (derived from this archive)
           </a>
           <a
             href="https://www.vedantasociety-chicago.org/"
