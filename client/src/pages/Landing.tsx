@@ -1,6 +1,30 @@
 import { Link } from "wouter";
+import { useEffect, useState } from "react";
 import logoImg from "@assets/logo.jpg";
 import shankaraImg from "@assets/shankara.jpg";
+
+// Renders logo correctly in light mode (multiply removes white bg) and dark mode (invert)
+function LogoImg({ className }: { className?: string }) {
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const check = () => setIsDark(document.documentElement.classList.contains("dark"));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <img
+      src={logoImg}
+      alt="adv.ai.ta"
+      className={className}
+      style={isDark
+        ? { filter: "invert(1) brightness(0.9)" }
+        : { mixBlendMode: "multiply" }
+      }
+    />
+  );
+}
 
 const quotes = [
   { text: "Ekam evadvitiyam — One only, without a second.", source: "Chandogya Upanishad 6.2.1" },
@@ -27,13 +51,8 @@ export default function Landing() {
       {/* Hero */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-16 text-center">
 
-        {/* Logo — uploaded image, transparent-bg trick via mix-blend-mode */}
-        <img
-          src={logoImg}
-          alt="adv.ai.ta"
-          className="w-48 h-auto mb-8 dark:invert"
-          style={{ mixBlendMode: "multiply" }}
-        />
+        {/* Logo — multiply blends away white bg on light bg; dark mode inverts to light */}
+        <LogoImg className="w-48 h-auto mb-8" />
 
         <blockquote className="max-w-xl mx-auto mb-10 px-6 py-5 bg-card border border-border rounded-xl">
           <p className="font-serif text-lg italic text-foreground mb-2">"{quote.text}"</p>

@@ -23,6 +23,29 @@ import shankaraImg from "@assets/shankara.jpg";
 // Pages that show the full-screen layout (no sidebar)
 const FULL_SCREEN_ROUTES = ["/", "/landing"];
 
+// Logo component: mix-blend-mode:multiply removes white bg in light mode; invert for dark
+function LogoImg({ className = "w-28 h-auto" }: { className?: string }) {
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const check = () => setIsDark(document.documentElement.classList.contains("dark"));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <img
+      src={logoImg}
+      alt="adv.ai.ta"
+      className={className}
+      style={isDark
+        ? { filter: "invert(1) brightness(0.9)" }
+        : { mixBlendMode: "multiply" }
+      }
+    />
+  );
+}
+
 function AppShell() {
   const [location] = useHashLocation();
   const isFullScreen = FULL_SCREEN_ROUTES.includes(location);
@@ -73,7 +96,7 @@ function AppShell() {
         <div className="px-4 py-4 border-b border-border">
           <Link href="/landing">
             <div className="flex flex-col items-center cursor-pointer">
-              <img src={logoImg} alt="adv.ai.ta" className="w-28 h-auto" />
+              <LogoImg />
             </div>
           </Link>
         </div>
@@ -117,11 +140,27 @@ function AppShell() {
                   )}
                 </Link>
               ))}
-              {/* Post-assessment paths */}
+              {/* Post-assessment fork — both are clickable */}
               <div className="ml-2.5 w-px h-2 bg-border" />
-              <div className="flex items-center gap-1 py-1 px-1">
-                <span className="flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold bg-muted text-muted-foreground">↺</span>
-                <span className="text-[10px] text-muted-foreground leading-tight">Go Deeper / Explore</span>
+              <div className="flex flex-col gap-0.5">
+                <Link href="/go-deeper">
+                  <div className={`flex items-center gap-2 py-1 px-1 rounded cursor-pointer transition-colors ${
+                    location.startsWith("/go-deeper") ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground"
+                  }`}>
+                    <span className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                      location.startsWith("/go-deeper") ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                    }`}>↺</span>
+                    <span className="text-xs leading-tight">Go Deeper</span>
+                  </div>
+                </Link>
+                <Link href="/explore">
+                  <div className={`flex items-center gap-2 py-1 px-1 rounded cursor-pointer transition-colors ${
+                    location === "/explore" ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground"
+                  }`}>
+                    <span className="flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold bg-muted text-muted-foreground">→</span>
+                    <span className="text-xs leading-tight">Explore More</span>
+                  </div>
+                </Link>
               </div>
             </div>
           </div>
