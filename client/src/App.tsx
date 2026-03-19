@@ -24,25 +24,13 @@ import shankaraImg from "@assets/shankara.jpg";
 // Pages that show the full-screen layout (no sidebar)
 const FULL_SCREEN_ROUTES = ["/", "/landing"];
 
-// Logo component: mix-blend-mode:multiply removes white bg in light mode; invert for dark
+// Logo component: always render as-is — no color shifting between modes
 function LogoImg({ className = "w-28 h-auto" }: { className?: string }) {
-  const [isDark, setIsDark] = useState(false);
-  useEffect(() => {
-    const check = () => setIsDark(document.documentElement.classList.contains("dark"));
-    check();
-    const observer = new MutationObserver(check);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    return () => observer.disconnect();
-  }, []);
   return (
     <img
       src={logoImg}
       alt="adv.ai.ta"
       className={className}
-      style={isDark
-        ? { filter: "invert(1) brightness(0.9)" }
-        : { mixBlendMode: "multiply" }
-      }
     />
   );
 }
@@ -115,9 +103,16 @@ function AppShell() {
             </Link>
           ))}
 
-          {/* Learning Journey mini-map */}
-          <div className="mx-2 mt-4 mb-2 px-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Learning Journey</p>
+          {/* Learning Journey mini-map — visually separated from nav */}
+          <div className="mx-2 mt-3 mb-2">
+            {/* Divider with label */}
+            <div className="flex items-center gap-2 px-1 mb-2">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-[9px] font-bold text-muted-foreground/70 uppercase tracking-widest whitespace-nowrap">Learning Journey</span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+            {/* Journey steps inside a subtle inset box */}
+            <div className="rounded-lg bg-muted/40 border border-border/60 px-2 py-1.5">
             <div className="flex flex-col gap-0">
               {journeySteps.map((step, i) => (
                 <Link key={step.href} href={step.href}>
@@ -164,6 +159,7 @@ function AppShell() {
                 </Link>
               </div>
             </div>
+            </div>{/* end inset box */}
           </div>
         </nav>
         <div className="border-t border-border">

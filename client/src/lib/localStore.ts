@@ -1,11 +1,19 @@
 // In-memory store replacing the backend entirely
 import type { Reflection, Discussion, QuizResult } from "@shared/schema";
 
+export interface NoteAttachment {
+  name: string;      // original filename
+  size: number;      // bytes
+  dataUrl: string;   // base64 data URL for display/download
+  mimeType: string;
+}
+
 export interface Note {
   id: number;
   content: string;
   context: string; // page/concept the note was taken on
   createdAt: string;
+  attachment?: NoteAttachment;
 }
 
 let reflections: Reflection[] = [
@@ -57,8 +65,8 @@ export const store = {
     return item;
   },
   getNotes: () => [...notes].reverse(),
-  addNote: (content: string, context: string) => {
-    const item: Note = { id: nextId.n++, content, context, createdAt: new Date().toISOString() };
+  addNote: (content: string, context: string, attachment?: NoteAttachment) => {
+    const item: Note = { id: nextId.n++, content, context, createdAt: new Date().toISOString(), attachment };
     notes.push(item);
     notify();
     return item;

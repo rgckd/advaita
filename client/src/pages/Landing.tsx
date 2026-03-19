@@ -1,30 +1,12 @@
 import { Link } from "wouter";
-import { useEffect, useState } from "react";
+
 import { ThemeIcon } from "@/components/ThemeIcon";
 import logoImg from "@assets/logo.jpg";
 import shankaraImg from "@assets/shankara.jpg";
 
-// Renders logo correctly in light mode (multiply removes white bg) and dark mode (invert)
+// Logo: always render as-is — consistent across light and dark mode
 function LogoImg({ className }: { className?: string }) {
-  const [isDark, setIsDark] = useState(false);
-  useEffect(() => {
-    const check = () => setIsDark(document.documentElement.classList.contains("dark"));
-    check();
-    const observer = new MutationObserver(check);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    return () => observer.disconnect();
-  }, []);
-  return (
-    <img
-      src={logoImg}
-      alt="adv.ai.ta"
-      className={className}
-      style={isDark
-        ? { filter: "invert(1) brightness(0.9)" }
-        : { mixBlendMode: "multiply" }
-      }
-    />
-  );
+  return <img src={logoImg} alt="adv.ai.ta" className={className} />;
 }
 
 const quotes = [
