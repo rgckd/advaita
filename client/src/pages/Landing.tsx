@@ -38,15 +38,28 @@ export default function Landing() {
         {/* Shankara image */}
         <div className="max-w-sm w-full mx-auto mb-10 rounded-xl overflow-hidden border border-border shadow-md">
           <img src={shankaraImg} alt="Adi Shankaracharya teaching his disciples" className="w-full h-48 object-cover object-top" />
-          <p className="text-xs text-center text-muted-foreground italic py-2 bg-card">
-            Adi Shankaracharya — the founder of Advaita Vedanta
-          </p>
+          <div className="py-3 px-4 bg-card text-center">
+            <p className="font-serif text-sm font-semibold text-primary">वन्दे गुरु परम्पराम्</p>
+            <p className="text-xs text-muted-foreground italic mt-0.5">Vande Guru Paramparam — I bow to the lineage of teachers</p>
+          </div>
         </div>
 
-        <p className="max-w-lg text-base text-muted-foreground mb-10 leading-relaxed">
+        <p className="max-w-lg text-base text-muted-foreground mb-4 leading-relaxed">
           A personalized AI companion for the study of <strong className="text-foreground">Advaita Vedanta</strong> — 
           the ancient non-dual philosophy of Adi Shankaracharya. Study classical texts, reflect deeply, 
           and discuss with fellow seekers.
+        </p>
+        <p className="max-w-lg text-sm text-muted-foreground mb-10 leading-relaxed">
+          Contents are based on the{" "}
+          <a
+            href="https://lists.advaita-vedanta.org/archives/advaita-l/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline hover:opacity-80"
+          >
+            Advaita-l Archives
+          </a>
+          {" "}— a repository of scholarly discussions on Advaita Vedanta spanning decades.
         </p>
 
         <Link href="/launch">
