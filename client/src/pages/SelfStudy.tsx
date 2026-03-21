@@ -193,7 +193,7 @@ export default function SelfStudy() {
   const pageNotes = allNotes.filter(n => n.context === notesContext);
   function saveStudyNote() {
     if (!noteDraft.trim()) return;
-    noteStore.addNote(noteDraft.trim(), notesContext);
+    noteStore.addNote(noteDraft.trim(), notesContext, undefined, undefined, false);
     setNoteDraft("");
   }
 
@@ -208,8 +208,8 @@ export default function SelfStudy() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-      {/* In-app media viewer */}
-      <MediaModal item={mediaItem} onClose={() => setMediaItem(null)} />
+      {/* In-app media viewer — split pane with notes */}
+      <MediaModal item={mediaItem} onClose={() => setMediaItem(null)} noteContext={notesContext} />
 
       {/* Inline notes side tab — visible only on Self-study */}
       <button

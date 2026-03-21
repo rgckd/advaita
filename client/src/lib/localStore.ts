@@ -52,6 +52,16 @@ export interface FileAttachment {
 /** @deprecated use FileAttachment */
 export interface NoteAttachment extends FileAttachment {}
 
+// ─── Custom Study Map ────────────────────────────────────────────────────────
+export interface SavedStudyMap {
+  id: number;
+  name: string;
+  request: string;       // the user's original request text
+  nodes: { id: string; label: string; x: number; y: number; level: string; explored: boolean }[];
+  edges: { from: string; to: string }[];
+  createdAt: string;
+}
+
 // ─── User Upload (Self-study) ──────────────────────────────────────────────────
 export interface UserUpload {
   id: number;
@@ -72,7 +82,7 @@ export interface Note {
   context: string;
   createdAt: string;
   attachment?: FileAttachment;
-  isPublic?: boolean;
+  isPublic: boolean;      // true = visible in Satsang; false = private
   uploadId?: number;      // if note is linked to a user upload
 }
 
@@ -103,7 +113,8 @@ let discussions: DiscussionWithAttachment[] = [
 let quizResults: QuizResult[] = [];
 let notes: Note[] = [];
 let uploads: UserUpload[] = [];
-let nextId = { r: 3, d: 4, q: 1, n: 1, u: 1 };
+let savedMaps: SavedStudyMap[] = [];
+let nextId = { r: 3, d: 4, q: 1, n: 1, u: 1, m: 1 };
 
 // ─── Reactivity ───────────────────────────────────────────────────────────────
 type Listener = () => void;
@@ -165,8 +176,8 @@ export const store = {
 
   // Notes
   getNotes: () => [...notes].reverse(),
-  addNote: (content: string, context: string, attachment?: FileAttachment, uploadId?: number) => {
-    const item: Note = { id: nextId.n++, content, context, createdAt: new Date().toISOString(), attachment, uploadId };
+  addNote: (content: string, context: string, attachment?: FileAttachment, uploadId?: number, isPublic = false) => {
+    const item: Note = { id: nextId.n++, content, context, createdAt: new Date().toISOString(), attachment, uploadId, isPublic };
     notes.push(item);
     notify();
     return item;
@@ -180,6 +191,16 @@ export const store = {
     const n = notes.find(x => x.id === id);
     if (n) { n.isPublic = !n.isPublic; notify(); }
   },
+
+  // Saved Study Maps
+  getSavedMaps: () => [...savedMaps].reverse() as SavedStudyMap[],
+  saveStudyMap: (name: string, request: string, nodes: SavedStudyMap["nodes"], edges: SavedStudyMap["edges"]) => {
+    const item: SavedStudyMap = { id: nextId.m++, name, request, nodes, edges, createdAt: new Date().toISOString() };
+    savedMaps.push(item);
+    notify();
+    return item;
+  },
+  deleteStudyMap: (id: number) => { savedMaps = savedMaps.filter(m => m.id !== id); notify(); },
 
   // User Uploads (Self-study)
   getUploads: () => [...uploads].reverse() as UserUpload[],

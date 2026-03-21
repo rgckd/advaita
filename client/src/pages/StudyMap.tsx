@@ -1,8 +1,7 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Link } from "wouter";
 import { CONCEPTS } from "./Explore";
-import { store, subscribe, type SeekerLevel } from "@/lib/localStore";
-import { useEffect } from "react";
+import { store, subscribe, type SeekerLevel, type SavedStudyMap } from "@/lib/localStore";
 
 type Node = { id: string; label: string; x: number; y: number; level: string; explored: boolean };
 type Edge = { from: string; to: string };
@@ -125,8 +124,13 @@ export default function StudyMap() {
   const [customRequest, setCustomRequest] = useState("");
   const [customLoading, setCustomLoading] = useState(false);
   const [seekerLevel, setSeekerLevel] = useState(store.getLevel());
+  const [savedMaps, setSavedMaps] = useState<SavedStudyMap[]>(store.getSavedMaps());
+  const [savedMapId, setSavedMapId] = useState<number | null>(null); // which saved map is active
 
-  useEffect(() => subscribe(() => setSeekerLevel(store.getLevel())), []);
+  useEffect(() => subscribe(() => {
+    setSeekerLevel(store.getLevel());
+    setSavedMaps(store.getSavedMaps());
+  }), []);
 
   const selectedNode = nodes.find(n => n.id === selected);
   const concept = selectedNode ? CONCEPTS.find(c => c.id === selectedNode.id) : null;
@@ -150,15 +154,28 @@ export default function StudyMap() {
     // Simulate AI delay
     setTimeout(() => {
       const { nodes: newNodes, edges: newEdges } = generateCustomMap(customRequest);
+      const mapName = `Custom: "${customRequest.slice(0, 28)}${customRequest.length > 28 ? "…" : ""}"`;
       setNodes(newNodes);
       setEdges(newEdges);
-      setCustomMapName(`Custom: "${customRequest.slice(0, 30)}${customRequest.length > 30 ? "…" : ""}"`);
+      setCustomMapName(mapName);
       setActiveMapId("custom");
+      // Auto-save the generated map
+      const saved = store.saveStudyMap(mapName, customRequest, newNodes, newEdges);
+      setSavedMapId(saved.id);
       setCustomRequest("");
       setShowCustomForm(false);
       setCustomLoading(false);
       setSelected(null);
     }, 1200);
+  }
+
+  function loadSavedMap(map: SavedStudyMap) {
+    setNodes(map.nodes);
+    setEdges(map.edges);
+    setCustomMapName(map.name);
+    setActiveMapId("custom");
+    setSavedMapId(map.id);
+    setSelected(null);
   }
 
   const mapTabs = [
@@ -176,7 +193,7 @@ export default function StudyMap() {
         <div>
           <h1 className="font-serif text-2xl font-bold text-foreground mb-1">Study Maps</h1>
           <p className="text-sm text-muted-foreground">
-            {activePreset?.subtitle || customMapName || "Your personal Advaita knowledge graph"} — {exploredCount}/{nodes.length} concepts explored
+            {savedMapId ? (savedMaps.find(m => m.id === savedMapId)?.name || customMapName) : (activePreset?.subtitle || "Your personal Advaita knowledge graph")} — {exploredCount}/{nodes.length} concepts explored
           </p>
         </div>
         <div className="flex gap-1.5 flex-wrap">
@@ -189,13 +206,13 @@ export default function StudyMap() {
       </div>
 
       {/* Map selector tabs */}
-      <div className="flex gap-2 mb-5 flex-wrap">
+      <div className="flex gap-2 mb-3 flex-wrap">
         {mapTabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => tab.id === "custom" ? setShowCustomForm(true) : switchMap(tab.id)}
             className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-              activeMapId === tab.id
+              activeMapId === tab.id && savedMapId === null
                 ? "bg-primary text-primary-foreground border-primary"
                 : tab.active
                 ? "bg-primary/10 text-primary border-primary/40"
@@ -207,6 +224,24 @@ export default function StudyMap() {
           </button>
         ))}
       </div>
+
+      {/* Saved custom maps row */}
+      {savedMaps.length > 0 && (
+        <div className="flex gap-2 mb-4 flex-wrap items-center">
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wide font-semibold">Saved:</span>
+          {savedMaps.map(m => (
+            <div key={m.id} className={`flex items-center gap-1 pl-3 pr-1 py-1 rounded-lg text-xs border transition-colors ${
+              savedMapId === m.id ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border hover:border-primary/40"
+            }`}>
+              <button onClick={() => loadSavedMap(m)} className="truncate max-w-[140px]">{m.name}</button>
+              <button onClick={() => { store.deleteStudyMap(m.id); if (savedMapId === m.id) { setActiveMapId("jijnasu"); setNodes(PRESET_MAPS.jijnasu.nodes); setEdges(PRESET_MAPS.jijnasu.edges); setCustomMapName(null); setSavedMapId(null); } }}
+                className="ml-1 text-muted-foreground hover:text-destructive p-0.5 rounded" title="Delete map">
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Custom map request form */}
       {showCustomForm && (

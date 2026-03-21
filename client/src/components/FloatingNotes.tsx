@@ -50,7 +50,7 @@ export function FloatingNotes() {
 
   function saveNote() {
     if (!draft.trim()) return;
-    store.addNote(draft.trim(), context, undefined, undefined);
+    store.addNote(draft.trim(), context, undefined, undefined, isPublic);
     setDraft("");
   }
 
@@ -272,7 +272,7 @@ function NoteCard({
         <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
             <p className="text-xs text-foreground leading-relaxed whitespace-pre-wrap">{note.content}</p>
-            <span className="text-[9px] text-muted-foreground/60">{(note as any).isPublic ? "🌐 Shared" : "🔒 Private"}</span>
+            <span className="text-[9px] text-muted-foreground/60">{note.isPublic ? "🌐 Shared to Satsang" : "🔒 Private"}</span>
           </div>
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 pt-0.5">
             <button onClick={() => onEdit(note)} className="text-muted-foreground hover:text-primary transition-colors text-[11px]" title="Edit">✏</button>
