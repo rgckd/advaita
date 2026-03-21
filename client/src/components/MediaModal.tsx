@@ -403,6 +403,8 @@ interface Props {
 }
 
 export function MediaModal({ item, onClose, noteContext }: Props) {
+  const [showNotes, setShowNotes] = useState(false); // hidden by default on mobile
+
   useEffect(() => {
     if (!item) return;
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -415,11 +417,22 @@ export function MediaModal({ item, onClose, noteContext }: Props) {
   const context = noteContext || item.title;
 
   return (
-    /* Full-screen overlay — stays within the app, does not open a new tab */
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-card border-b border-border flex-shrink-0">
-        <p className="font-serif text-sm font-semibold text-foreground truncate mr-4">{item.title}</p>
+      <div className="flex items-center gap-2 px-4 py-2.5 bg-card border-b border-border flex-shrink-0">
+        <p className="font-serif text-sm font-semibold text-foreground truncate flex-1 min-w-0">{item.title}</p>
+        {/* Notes toggle — always visible in top bar */}
+        <button
+          onClick={() => setShowNotes(v => !v)}
+          className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs transition-colors ${
+            showNotes
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground hover:text-foreground"
+          }`}
+          title="Toggle notes"
+        >
+          📝 Notes
+        </button>
         <button
           onClick={onClose}
           className="flex-shrink-0 px-3 py-1.5 bg-muted text-foreground rounded-lg text-xs hover:bg-muted/80 transition-colors"
@@ -429,10 +442,12 @@ export function MediaModal({ item, onClose, noteContext }: Props) {
         </button>
       </div>
 
-      {/* Split pane: content | notes */}
-      <div className="flex-1 overflow-hidden flex">
-        {/* Media content — takes remaining space */}
-        <div className="flex-1 overflow-hidden">
+      {/* Body: on desktop always side-by-side; on mobile notes slides in as overlay sheet */}
+      <div className="flex-1 overflow-hidden flex relative">
+        {/* Media content — full width when notes hidden, shrinks on desktop when notes open */}
+        <div className={`flex-1 overflow-hidden transition-all ${
+          showNotes ? "hidden sm:block" : ""
+        }`}>
           {item.kind === "youtube" && (
             <iframe
               src={`https://www.youtube-nocookie.com/embed/${item.youtubeId}?autoplay=1&rel=0&modestbranding=1`}
@@ -450,10 +465,22 @@ export function MediaModal({ item, onClose, noteContext }: Props) {
           )}
         </div>
 
-        {/* Notes panel — fixed 280px width */}
-        <div className="w-72 flex-shrink-0 overflow-hidden">
-          <NotesPanel context={context} />
-        </div>
+        {/* Notes panel:
+            - Mobile: full-width overlay when open (replaces content view, ← Back button to return)
+            - Desktop (sm+): fixed 280px right column, content stays visible */}
+        {showNotes && (
+          <div className="absolute inset-0 sm:static sm:w-72 sm:flex-shrink-0 sm:inset-auto overflow-hidden flex flex-col">
+            {/* Mobile-only back bar */}
+            <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-muted/20 sm:hidden">
+              <button onClick={() => setShowNotes(false)} className="text-xs text-primary hover:underline">
+                ← Back to {item.kind === "youtube" ? "video" : "text"}
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <NotesPanel context={context} />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
