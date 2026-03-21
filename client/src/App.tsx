@@ -57,9 +57,8 @@ function AppShell() {
   // Close sidebar on route change (mobile)
   useEffect(() => { setSidebarOpen(false); }, [location]);
 
-  // Single unified nav — no separate Learning Journey section
+  // Single unified nav — logo click = Home, no separate Home item, no Go Deeper
   const navItems = [
-    { href: "/launch",      label: "Home",        icon: "🏠" },
     { href: "/explore",     label: "Explore",     icon: "🔍" },
     { href: "/study-map",   label: "Study Maps",  icon: "🗺" },
     { href: "/self-study",  label: "Self-study",  icon: "📚" },
@@ -80,10 +79,10 @@ function AppShell() {
   // Reusable sidebar content (shared between desktop and mobile drawer)
   const SidebarContent = () => (
     <>
-      {/* Logo */}
+      {/* Logo — clicking goes to Home (/launch) */}
       <div className="px-4 py-4 border-b border-border">
-        <Link href="/landing">
-          <div className="flex flex-col items-center cursor-pointer">
+        <Link href="/launch">
+          <div className="flex flex-col items-center cursor-pointer" title="Home">
             <LogoImg />
           </div>
         </Link>
@@ -109,17 +108,7 @@ function AppShell() {
             </div>
           </Link>
         ))}
-        {/* Go Deeper as a footer nav item */}
-        <Link href="/go-deeper">
-          <div className={`flex items-center gap-3 mx-2 px-3 py-2 rounded-md text-sm cursor-pointer transition-colors mb-0.5 ${
-            location.startsWith("/go-deeper")
-              ? "bg-primary text-primary-foreground font-medium"
-              : "text-sidebar-foreground hover:bg-sidebar-accent"
-          }`}>
-            <span className="text-base">↺</span>
-            Go Deeper
-          </div>
-        </Link>
+
       </nav>
 
       {/* Shankara + dark mode */}
@@ -211,7 +200,7 @@ function AppShell() {
 
         {/* ── Mobile bottom nav bar ── */}
         <nav className="fixed bottom-0 left-0 right-0 z-20 flex md:hidden bg-sidebar border-t border-border">
-          {navItems.slice(0, 5).map(item => ( // Home, Explore, Study Maps, Self-study, Reflection
+          {navItems.slice(0, 5).map(item => ( // Explore, Study Maps, Self-study, Reflection, Assessment
             <Link key={item.href} href={item.href} className="flex-1">
               <div className={`flex flex-col items-center justify-center py-2 gap-0.5 transition-colors ${
                 location.startsWith(item.href) ? "text-primary" : "text-muted-foreground"

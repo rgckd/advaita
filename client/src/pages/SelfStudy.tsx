@@ -9,6 +9,7 @@ import { store, subscribe, LEVELS, type SeekerLevel, type UserUpload } from "@/l
 import { CONCEPTS } from "./Explore";
 import { LevelFilter } from "@/components/SeekerBadge";
 import { AttachmentPicker } from "@/components/AttachmentPicker";
+import { MediaModal, type MediaItem } from "@/components/MediaModal";
 
 // ── Curated readings per concept, tagged by level ────────────────────────────
 const READINGS: Record<string, {
@@ -111,6 +112,7 @@ export default function SelfStudy() {
   const [uploadName, setUploadName] = useState("");
   const [uploadConcept, setUploadConcept] = useState(concept?.name || "");
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [mediaItem, setMediaItem] = useState<MediaItem | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => subscribe(() => {
@@ -190,6 +192,8 @@ export default function SelfStudy() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      {/* In-app media viewer */}
+      <MediaModal item={mediaItem} onClose={() => setMediaItem(null)} />
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
@@ -305,20 +309,22 @@ export default function SelfStudy() {
                   </div>
                   <p className="text-xs text-muted-foreground">{video.channel}</p>
                 </div>
-                <a
-                  href={`https://www.youtube.com/watch?v=${video.youtubeId}`}
-                  target="_blank" rel="noopener noreferrer"
+                <button
+                  onClick={() => setMediaItem({ kind: "youtube", title: video.title, youtubeId: video.youtubeId })}
                   className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs hover:opacity-90 transition-opacity"
                 >
                   ▶ Watch
-                </a>
+                </button>
               </div>
-              <a href={`https://www.youtube.com/watch?v=${video.youtubeId}`} target="_blank" rel="noopener noreferrer" className="block relative group">
+              <button
+                onClick={() => setMediaItem({ kind: "youtube", title: video.title, youtubeId: video.youtubeId })}
+                className="block w-full relative group cursor-pointer"
+              >
                 <img src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`} alt={video.title} className="w-full object-cover" style={{ maxHeight: "180px" }} />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
                   <span className="text-white text-4xl">▶</span>
                 </div>
-              </a>
+              </button>
             </div>
           ))}
         </div>
@@ -430,16 +436,24 @@ export default function SelfStudy() {
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
                     {upload.type === "pdf" && upload.dataUrl && (
-                      <a href={upload.dataUrl} target="_blank" rel="noopener noreferrer"
-                        className="px-3 py-1 bg-card border border-border rounded-lg text-xs text-foreground hover:bg-muted transition-colors">
+                      <button
+                        onClick={() => setMediaItem({ kind: "pdf", title: upload.name, dataUrl: upload.dataUrl!, mimeType: upload.type === "pdf" ? "application/pdf" : "text/plain" })}
+                        className="px-3 py-1 bg-card border border-border rounded-lg text-xs text-foreground hover:bg-muted transition-colors"
+                      >
                         Open
-                      </a>
+                      </button>
                     )}
                     {upload.type === "video-link" && upload.url && (
-                      <a href={upload.url} target="_blank" rel="noopener noreferrer"
-                        className="px-3 py-1 bg-primary text-primary-foreground rounded-lg text-xs hover:opacity-90">
+                      <button
+                        onClick={() => {
+                          const ytId = youtubeId(upload.url!);
+                          if (ytId) setMediaItem({ kind: "youtube", title: upload.name, youtubeId: ytId });
+                          else setMediaItem({ kind: "url", title: upload.name, url: upload.url! });
+                        }}
+                        className="px-3 py-1 bg-primary text-primary-foreground rounded-lg text-xs hover:opacity-90"
+                      >
                         ▶ Watch
-                      </a>
+                      </button>
                     )}
                     <button
                       onClick={() => store.deleteUpload(upload.id)}
@@ -449,12 +463,15 @@ export default function SelfStudy() {
                   </div>
                 </div>
                 {ytId && (
-                  <a href={upload.url!} target="_blank" rel="noopener noreferrer" className="block relative group">
+                  <button
+                    onClick={() => setMediaItem({ kind: "youtube", title: upload.name, youtubeId: ytId })}
+                    className="block w-full relative group cursor-pointer"
+                  >
                     <img src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`} alt={upload.name} className="w-full object-cover" style={{ maxHeight: "160px" }} />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
                       <span className="text-white text-4xl">▶</span>
                     </div>
-                  </a>
+                  </button>
                 )}
               </div>
             );

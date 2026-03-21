@@ -73,6 +73,7 @@ export const CONCEPTS = [
 export default function Explore() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
+  const [showIntro, setShowIntro] = useState(true);
 
   const filtered = CONCEPTS.filter(c => {
     const matchQ = c.name.toLowerCase().includes(query.toLowerCase()) || c.tagline.toLowerCase().includes(query.toLowerCase());
@@ -81,11 +82,35 @@ export default function Explore() {
   });
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-10">
-      <div className="mb-8">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <div className="mb-6">
         <h1 className="font-serif text-2xl font-bold text-foreground mb-1">Explore Concepts</h1>
         <p className="text-sm text-muted-foreground">Begin with a question. Follow your curiosity.</p>
       </div>
+
+      {/* Advaita intro — dismissable */}
+      {showIntro && (
+        <div className="mb-6 bg-card border border-primary/20 rounded-xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-border/50 bg-primary/5 flex items-start justify-between gap-3">
+            <div>
+              <p className="font-serif text-sm font-semibold text-foreground">What is Advaita Vedanta?</p>
+              <p className="text-xs text-muted-foreground mt-0.5">A brief orientation before you dive in</p>
+            </div>
+            <button onClick={() => setShowIntro(false)} className="text-muted-foreground hover:text-foreground text-sm flex-shrink-0">✕</button>
+          </div>
+          <div className="px-5 py-4 space-y-2 text-sm text-foreground leading-relaxed">
+            <p>
+              <strong>Advaita</strong> means <em>non-dual</em> — the teaching that at the deepest level, the individual self (Ātman) and the ultimate reality (Brahman) are not two separate things, but one undivided consciousness.
+            </p>
+            <p>
+              This is the central insight of <strong>Adi Shankaracharya</strong> (8th century CE), who systematized these teachings from the Upanishads, Bhagavad Gita, and Brahma Sutras (the <em>Prasthāna Trayī</em>).
+            </p>
+            <p className="text-muted-foreground">
+              The concepts below are the building blocks of this inquiry — each one pointing, from a different angle, at the same recognition. Start anywhere curiosity leads you.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-3 mb-6">
         <input

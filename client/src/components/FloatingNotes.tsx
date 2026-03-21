@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useHashLocation } from "wouter/use-hash-location";
-import { store, subscribe, type Note, type FileAttachment } from "@/lib/localStore";
-import { AttachmentPicker, AttachmentDisplay } from "@/components/AttachmentPicker";
+import { store, subscribe, type Note } from "@/lib/localStore";
 
 // Pages that have their own built-in writing form — Notes tab is hidden there
 // to avoid confusion between "Quick Notes" (private scratchpad) and the page's
@@ -34,7 +33,6 @@ export function FloatingNotes() {
   const [notes, setNotes] = useState<Note[]>(store.getNotes());
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState("");
-  const [attachment, setAttachment] = useState<FileAttachment | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => subscribe(() => setNotes(store.getNotes())), []);
@@ -50,10 +48,9 @@ export function FloatingNotes() {
   const currentNotes = notes.filter(n => n.context === context);
 
   function saveNote() {
-    if (!draft.trim() && !attachment) return;
-    store.addNote(draft.trim(), context, attachment ?? undefined);
+    if (!draft.trim()) return;
+    store.addNote(draft.trim(), context);
     setDraft("");
-    setAttachment(null);
   }
 
   function startEdit(note: Note) {
@@ -155,16 +152,13 @@ export function FloatingNotes() {
                 data-testid="textarea-quick-note"
               />
 
-              {/* Attachment area */}
-              <AttachmentPicker value={attachment} onChange={setAttachment} className="px-4 pb-2 flex-shrink-0" />
-
               <div className="px-4 pb-3 flex items-center justify-between border-t border-border pt-2 flex-shrink-0">
                 <a href="#/diary" className="text-[10px] text-primary/70 hover:text-primary transition-colors" title="Go to Reflection Diary">
                   📖 Open Diary
                 </a>
                 <button
                   onClick={saveNote}
-                  disabled={!draft.trim() && !attachment}
+                  disabled={!draft.trim()}
                   className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-40"
                   data-testid="button-save-note"
                 >
@@ -266,10 +260,7 @@ function NoteCard({
       ) : (
         <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
-            {note.content && (
-              <p className="text-xs text-foreground leading-relaxed whitespace-pre-wrap">{note.content}</p>
-            )}
-            {note.attachment && <AttachmentDisplay attachment={note.attachment} />}
+            <p className="text-xs text-foreground leading-relaxed whitespace-pre-wrap">{note.content}</p>
           </div>
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 pt-0.5">
             <button onClick={() => onEdit(note)} className="text-muted-foreground hover:text-primary transition-colors text-[11px]" title="Edit">✏</button>
