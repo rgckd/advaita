@@ -10,6 +10,7 @@ import { CONCEPTS } from "./Explore";
 import { LevelFilter } from "@/components/SeekerBadge";
 import { AttachmentPicker } from "@/components/AttachmentPicker";
 import { MediaModal, type MediaItem } from "@/components/MediaModal";
+import { store as noteStore, subscribe as noteSubscribe } from "@/lib/localStore";
 
 // ── Curated readings per concept, tagged by level ────────────────────────────
 const READINGS: Record<string, {
@@ -113,7 +114,13 @@ export default function SelfStudy() {
   const [uploadConcept, setUploadConcept] = useState(concept?.name || "");
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [mediaItem, setMediaItem] = useState<MediaItem | null>(null);
+  // Inline notes panel
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [allNotes, setAllNotes] = useState(noteStore.getNotes());
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => noteSubscribe(() => setAllNotes(noteStore.getNotes())), []);
 
   useEffect(() => subscribe(() => {
     setCurrentLevel(store.getLevel());
@@ -181,6 +188,15 @@ export default function SelfStudy() {
     return m?.[1] || null;
   }
 
+  // Notes context for this page
+  const notesContext = concept ? `Self-study: ${concept.id}` : "Self-study";
+  const pageNotes = allNotes.filter(n => n.context === notesContext);
+  function saveStudyNote() {
+    if (!noteDraft.trim()) return;
+    noteStore.addNote(noteDraft.trim(), notesContext);
+    setNoteDraft("");
+  }
+
   const levelBadge: Record<SeekerLevel, string> = {
     jijnasu:  "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
     sadhaka:  "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
@@ -194,6 +210,70 @@ export default function SelfStudy() {
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
       {/* In-app media viewer */}
       <MediaModal item={mediaItem} onClose={() => setMediaItem(null)} />
+
+      {/* Inline notes side tab — visible only on Self-study */}
+      <button
+        onClick={() => setNotesOpen(o => !o)}
+        className={`fixed z-40 flex items-center gap-2 shadow-lg font-semibold transition-all ${
+          notesOpen ? "bg-primary text-primary-foreground" : "bg-primary/90 text-primary-foreground hover:bg-primary"
+        }`}
+        style={{ right: notesOpen ? 320 : 0, top: "40%", padding: "10px 14px 10px 10px", borderRadius: "10px 0 0 10px", fontSize: "13px" }}
+        title="Study Notes"
+      >
+        <span style={{ fontSize: "15px" }}>{notesOpen ? "✕" : "📝"}</span>
+        <span style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", fontSize: "12px", fontWeight: 700 }}>
+          {notesOpen ? "Close" : `Notes${pageNotes.length > 0 ? ` (${pageNotes.length})` : ""}`}
+        </span>
+      </button>
+
+      {notesOpen && (
+        <div className="fixed z-40 bg-card border-l border-t border-b border-border shadow-2xl flex flex-col overflow-hidden"
+          style={{ right: 0, top: "10%", width: 320, maxHeight: "80vh", borderRadius: "12px 0 0 12px" }}>
+          <div className="px-4 py-3 border-b border-border bg-muted/30 flex-shrink-0">
+            <p className="text-xs font-bold text-foreground">Study Notes</p>
+            <p className="text-[10px] text-muted-foreground/80">
+              Notes taken while studying{concept ? ` ${concept.name}` : ""} — private scratchpad
+            </p>
+          </div>
+          <textarea
+            value={noteDraft}
+            onChange={e => setNoteDraft(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) saveStudyNote(); }}
+            placeholder={`Jot a note while you study${concept ? ` ${concept.name}` : ""}\u2026\n\nCmd/Ctrl+Enter to save`}
+            className="flex-1 resize-none px-4 py-3 text-sm text-foreground bg-transparent placeholder:text-muted-foreground/60 focus:outline-none border-none"
+            style={{ minHeight: "120px", maxHeight: "180px" }}
+            autoFocus
+          />
+          <div className="px-4 pb-3 flex items-center justify-between border-t border-border pt-2 flex-shrink-0">
+            <span className="text-[10px] text-muted-foreground">⌘/Ctrl+Enter to save</span>
+            <button onClick={saveStudyNote} disabled={!noteDraft.trim()}
+              className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:opacity-90 disabled:opacity-40">
+              Save Note
+            </button>
+          </div>
+          {pageNotes.length > 0 && (
+            <div className="border-t border-border overflow-y-auto" style={{ maxHeight: "240px" }}>
+              <p className="px-4 pt-2 pb-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                Notes on this page
+              </p>
+              {pageNotes.map(note => (
+                <div key={note.id} className="px-4 py-2.5 border-b border-border/50 group">
+                  <div className="flex items-start gap-2">
+                    <p className="text-xs text-foreground leading-relaxed flex-1 whitespace-pre-wrap">{note.content}</p>
+                    <button onClick={() => noteStore.deleteNote(note.id)}
+                      className="text-muted-foreground hover:text-destructive text-[11px] opacity-0 group-hover:opacity-100 transition-opacity">
+                      🗑
+                    </button>
+                  </div>
+                  <p className="text-[9px] text-muted-foreground/60 mt-1">
+                    {new Date(note.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between flex-wrap gap-2 mb-1">

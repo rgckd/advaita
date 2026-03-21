@@ -2,12 +2,78 @@
  * MediaModal — in-app viewer for YouTube videos and PDF/text files.
  * Opens as a full-screen overlay so users never leave the application.
  */
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 
 export type MediaItem =
   | { kind: "youtube"; title: string; youtubeId: string }
   | { kind: "pdf"; title: string; dataUrl: string; mimeType?: string }
   | { kind: "url"; title: string; url: string };
+
+/** Converts a base64 dataUrl to a blob URL, which is not subject to CSP data: restrictions */
+function PdfViewer({ item }: { item: Extract<MediaItem, { kind: "pdf" }> }) {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [textContent, setTextContent] = useState<string | null>(null);
+  const prevUrl = useRef<string | null>(null);
+
+  useEffect(() => {
+    const mime = item.mimeType || "application/pdf";
+    // Images — just show directly
+    if (mime.startsWith("image/")) { setBlobUrl(item.dataUrl); return; }
+    // Text — decode base64 and display as text
+    if (mime === "text/plain" || mime.includes("markdown")) {
+      try { setTextContent(atob(item.dataUrl.split(",")[1] || "")); } catch { setTextContent(item.dataUrl); }
+      return;
+    }
+    // PDF — convert to blob URL to bypass CSP restrictions on data: URIs in iframes
+    try {
+      const base64 = item.dataUrl.split(",")[1];
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: mime });
+      const url = URL.createObjectURL(blob);
+      setBlobUrl(url);
+      prevUrl.current = url;
+    } catch (e) {
+      setBlobUrl(item.dataUrl); // fallback
+    }
+    return () => { if (prevUrl.current) URL.revokeObjectURL(prevUrl.current); };
+  }, [item.dataUrl, item.mimeType]);
+
+  const mime = item.mimeType || "application/pdf";
+
+  if (mime.startsWith("image/") && blobUrl) {
+    return (
+      <div className="w-full h-full flex items-center justify-center overflow-auto p-4 bg-background">
+        <img src={blobUrl} alt={item.title} className="max-w-full max-h-full object-contain rounded-lg" />
+      </div>
+    );
+  }
+
+  if (textContent !== null) {
+    return (
+      <div className="w-full h-full overflow-auto p-6 bg-background">
+        <pre className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed max-w-3xl mx-auto">{textContent}</pre>
+      </div>
+    );
+  }
+
+  if (!blobUrl) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground">
+        <p className="text-sm">Loading…</p>
+      </div>
+    );
+  }
+
+  return (
+    <iframe
+      src={blobUrl}
+      title={item.title}
+      className="w-full h-full border-0"
+    />
+  );
+}
 
 interface Props {
   item: MediaItem | null;
@@ -56,39 +122,7 @@ export function MediaModal({ item, onClose }: Props) {
         )}
 
         {item.kind === "pdf" && (
-          <>
-            {item.mimeType?.startsWith("image/") ? (
-              <div className="w-full h-full flex items-center justify-center overflow-auto p-4">
-                <img src={item.dataUrl} alt={item.title} className="max-w-full max-h-full object-contain rounded-lg" />
-              </div>
-            ) : item.mimeType === "text/plain" || item.mimeType?.includes("markdown") ? (
-              <div className="w-full h-full overflow-auto p-6 bg-background">
-                <pre className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed max-w-3xl mx-auto">
-                  {/* dataUrl for text is base64 — decode it */}
-                  {atob(item.dataUrl.split(",")[1] || "")}
-                </pre>
-              </div>
-            ) : (
-              /* PDF — use <object> which works in all modern browsers */
-              <object
-                data={item.dataUrl}
-                type="application/pdf"
-                className="w-full h-full"
-              >
-                {/* Fallback if PDF embedding is blocked */}
-                <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
-                  <p className="text-sm">PDF preview is not available in this browser.</p>
-                  <a
-                    href={item.dataUrl}
-                    download={item.title}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:opacity-90"
-                  >
-                    Download PDF
-                  </a>
-                </div>
-              </object>
-            )}
-          </>
+          <PdfViewer item={item} />
         )}
 
         {item.kind === "url" && (

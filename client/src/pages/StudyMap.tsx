@@ -1,121 +1,270 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "wouter";
 import { CONCEPTS } from "./Explore";
+import { store, subscribe, type SeekerLevel } from "@/lib/localStore";
+import { useEffect } from "react";
 
 type Node = { id: string; label: string; x: number; y: number; level: string; explored: boolean };
 type Edge = { from: string; to: string };
 
-const NODES: Node[] = [
-  { id: "brahman", label: "Brahman", x: 300, y: 200, level: "Foundation", explored: true },
-  { id: "atman", label: "Atman", x: 160, y: 300, level: "Foundation", explored: true },
-  { id: "maya", label: "Maya", x: 440, y: 300, level: "Foundation", explored: true },
-  { id: "avidya", label: "Avidya", x: 360, y: 400, level: "Intermediate", explored: false },
-  { id: "adhyasa", label: "Adhyasa", x: 180, y: 420, level: "Intermediate", explored: false },
-  { id: "ajata-vada", label: "Ajata Vada", x: 520, y: 180, level: "Advanced", explored: false },
-  { id: "viveka", label: "Viveka", x: 80, y: 200, level: "Practice", explored: false },
-  { id: "turiya", label: "Turiya", x: 100, y: 360, level: "Intermediate", explored: false },
-  { id: "jiva", label: "Jiva", x: 240, y: 380, level: "Foundation", explored: false },
-];
-
-const EDGES: Edge[] = [
-  { from: "brahman", to: "atman" },
-  { from: "brahman", to: "maya" },
-  { from: "brahman", to: "ajata-vada" },
-  { from: "maya", to: "avidya" },
-  { from: "avidya", to: "adhyasa" },
-  { from: "atman", to: "jiva" },
-  { from: "atman", to: "turiya" },
-  { from: "viveka", to: "atman" },
-  { from: "jiva", to: "adhyasa" },
-];
-
 const NODE_COLORS: Record<string, string> = {
-  Foundation: "#E86A17",
+  Foundation:   "#E86A17",
   Intermediate: "#C89B3C",
-  Advanced: "#8B3A2A",
-  Practice: "#2F5D3A",
+  Advanced:     "#8B3A2A",
+  Practice:     "#2F5D3A",
 };
+
+// ── Preset maps per seeker level ─────────────────────────────────────────────
+const PRESET_MAPS: Record<string, { name: string; subtitle: string; nodes: Node[]; edges: Edge[] }> = {
+  jijnasu: {
+    name: "Jijñāsu Map",
+    subtitle: "Foundation concepts — entry point into Advaita",
+    nodes: [
+      { id: "brahman",   label: "Brahman",  x: 300, y: 180, level: "Foundation",   explored: true  },
+      { id: "atman",     label: "Atman",    x: 150, y: 290, level: "Foundation",   explored: true  },
+      { id: "maya",      label: "Maya",     x: 450, y: 290, level: "Foundation",   explored: true  },
+      { id: "avidya",    label: "Avidya",   x: 380, y: 400, level: "Intermediate", explored: false },
+      { id: "adhyasa",   label: "Adhyasa",  x: 180, y: 400, level: "Intermediate", explored: false },
+      { id: "jiva",      label: "Jiva",     x: 250, y: 370, level: "Foundation",   explored: false },
+    ],
+    edges: [
+      { from: "brahman", to: "atman"   },
+      { from: "brahman", to: "maya"    },
+      { from: "maya",    to: "avidya"  },
+      { from: "avidya",  to: "adhyasa" },
+      { from: "atman",   to: "jiva"    },
+      { from: "jiva",    to: "adhyasa" },
+    ],
+  },
+  sadhaka: {
+    name: "Sādhaka Map",
+    subtitle: "Texts and methodology — Bhashya and Upanishads",
+    nodes: [
+      { id: "brahman",     label: "Brahman",    x: 300, y: 150, level: "Foundation",   explored: true  },
+      { id: "atman",       label: "Atman",      x: 150, y: 260, level: "Foundation",   explored: true  },
+      { id: "maya",        label: "Maya",       x: 450, y: 260, level: "Foundation",   explored: true  },
+      { id: "adhyasa",     label: "Adhyasa",    x: 200, y: 380, level: "Intermediate", explored: true  },
+      { id: "avidya",      label: "Avidya",     x: 380, y: 380, level: "Intermediate", explored: false },
+      { id: "viveka",      label: "Viveka",     x: 80,  y: 180, level: "Practice",     explored: false },
+      { id: "turiya",      label: "Turiya",     x: 100, y: 340, level: "Intermediate", explored: false },
+      { id: "ajata-vada",  label: "Ajata Vada", x: 520, y: 160, level: "Advanced",     explored: false },
+    ],
+    edges: [
+      { from: "brahman",   to: "atman"     },
+      { from: "brahman",   to: "maya"      },
+      { from: "brahman",   to: "ajata-vada"},
+      { from: "maya",      to: "avidya"    },
+      { from: "avidya",    to: "adhyasa"   },
+      { from: "atman",     to: "turiya"    },
+      { from: "viveka",    to: "atman"     },
+    ],
+  },
+  mumukshu: {
+    name: "Mumukṣu Map",
+    subtitle: "Advanced texts — Brahma Sutras and beyond",
+    nodes: [
+      { id: "brahman",     label: "Brahman",       x: 300, y: 140, level: "Foundation",   explored: true  },
+      { id: "atman",       label: "Atman",         x: 150, y: 240, level: "Foundation",   explored: true  },
+      { id: "ajata-vada",  label: "Ajata Vada",    x: 480, y: 200, level: "Advanced",     explored: false },
+      { id: "adhyasa",     label: "Adhyasa",       x: 200, y: 360, level: "Intermediate", explored: false },
+      { id: "turiya",      label: "Turiya",        x: 100, y: 320, level: "Intermediate", explored: false },
+      { id: "viveka",      label: "Viveka",        x: 80,  y: 160, level: "Practice",     explored: false },
+      { id: "maya",        label: "Maya",          x: 420, y: 320, level: "Foundation",   explored: true  },
+    ],
+    edges: [
+      { from: "brahman",   to: "atman"      },
+      { from: "brahman",   to: "ajata-vada" },
+      { from: "brahman",   to: "maya"       },
+      { from: "atman",     to: "adhyasa"    },
+      { from: "atman",     to: "turiya"     },
+      { from: "viveka",    to: "atman"      },
+      { from: "maya",      to: "ajata-vada" },
+    ],
+  },
+};
+
+// Simulated AI custom map response
+function generateCustomMap(request: string): { nodes: Node[]; edges: Edge[] } {
+  // In a full implementation, this would call the AI. For the prototype,
+  // we create a focused map based on keywords in the request.
+  const req = request.toLowerCase();
+  let nodes: Node[] = [];
+  let edges: Edge[] = [];
+
+  if (req.includes("consciousness") || req.includes("turiya") || req.includes("awareness")) {
+    nodes = [
+      { id: "atman",  label: "Atman",  x: 300, y: 200, level: "Foundation",   explored: false },
+      { id: "turiya", label: "Turiya", x: 300, y: 330, level: "Intermediate", explored: false },
+      { id: "brahman",label: "Brahman",x: 150, y: 200, level: "Foundation",   explored: false },
+      { id: "maya",   label: "Maya",   x: 450, y: 200, level: "Foundation",   explored: false },
+    ];
+    edges = [{ from: "brahman", to: "atman" }, { from: "atman", to: "turiya" }, { from: "maya", to: "atman" }];
+  } else if (req.includes("maya") || req.includes("illusion") || req.includes("creation")) {
+    nodes = [
+      { id: "maya",   label: "Maya",   x: 300, y: 180, level: "Foundation",   explored: false },
+      { id: "avidya", label: "Avidya", x: 180, y: 310, level: "Intermediate", explored: false },
+      { id: "adhyasa",label: "Adhyasa",x: 420, y: 310, level: "Intermediate", explored: false },
+      { id: "brahman",label: "Brahman",x: 300, y: 380, level: "Foundation",   explored: false },
+    ];
+    edges = [{ from: "maya", to: "avidya" }, { from: "avidya", to: "adhyasa" }, { from: "brahman", to: "maya" }];
+  } else {
+    // Default: return the jijnasu foundation map
+    return { nodes: PRESET_MAPS.jijnasu.nodes, edges: PRESET_MAPS.jijnasu.edges };
+  }
+  return { nodes, edges };
+}
 
 export default function StudyMap() {
   const svgRef = useRef<SVGSVGElement>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [nodes, setNodes] = useState<Node[]>(NODES);
+  const [activeMapId, setActiveMapId] = useState<string>("jijnasu");
+  const [nodes, setNodes] = useState<Node[]>(PRESET_MAPS.jijnasu.nodes);
+  const [edges, setEdges] = useState<Edge[]>(PRESET_MAPS.jijnasu.edges);
+  const [customMapName, setCustomMapName] = useState<string | null>(null);
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [customRequest, setCustomRequest] = useState("");
+  const [customLoading, setCustomLoading] = useState(false);
+  const [seekerLevel, setSeekerLevel] = useState(store.getLevel());
+
+  useEffect(() => subscribe(() => setSeekerLevel(store.getLevel())), []);
 
   const selectedNode = nodes.find(n => n.id === selected);
   const concept = selectedNode ? CONCEPTS.find(c => c.id === selectedNode.id) : null;
-
-  const toggleExplored = (id: string) => {
-    setNodes(prev => prev.map(n => n.id === id ? { ...n, explored: !n.explored } : n));
-  };
-
   const exploredCount = nodes.filter(n => n.explored).length;
 
+  function switchMap(mapId: string) {
+    setActiveMapId(mapId);
+    setNodes(PRESET_MAPS[mapId].nodes);
+    setEdges(PRESET_MAPS[mapId].edges);
+    setSelected(null);
+    setCustomMapName(null);
+  }
+
+  function toggleExplored(id: string) {
+    setNodes(prev => prev.map(n => n.id === id ? { ...n, explored: !n.explored } : n));
+  }
+
+  function handleCustomRequest() {
+    if (!customRequest.trim()) return;
+    setCustomLoading(true);
+    // Simulate AI delay
+    setTimeout(() => {
+      const { nodes: newNodes, edges: newEdges } = generateCustomMap(customRequest);
+      setNodes(newNodes);
+      setEdges(newEdges);
+      setCustomMapName(`Custom: "${customRequest.slice(0, 30)}${customRequest.length > 30 ? "…" : ""}"`);
+      setActiveMapId("custom");
+      setCustomRequest("");
+      setShowCustomForm(false);
+      setCustomLoading(false);
+      setSelected(null);
+    }, 1200);
+  }
+
+  const mapTabs = [
+    { id: "jijnasu",  label: "Jijñāsu",  active: seekerLevel === "jijnasu"  },
+    { id: "sadhaka",  label: "Sādhaka",  active: seekerLevel === "sadhaka"  },
+    { id: "mumukshu", label: "Mumukṣu",  active: seekerLevel === "mumukshu" },
+    { id: "custom",   label: customMapName ? "Custom ✓" : "+ Custom", active: false },
+  ];
+
+  const activePreset = activeMapId !== "custom" ? PRESET_MAPS[activeMapId] : null;
+
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10">
-      <div className="mb-6 flex items-start justify-between">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <div className="mb-5 flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-serif text-2xl font-bold text-foreground mb-1">Study Map</h1>
-          <p className="text-sm text-muted-foreground">Your personal Advaita knowledge graph — {exploredCount}/{nodes.length} concepts explored</p>
+          <h1 className="font-serif text-2xl font-bold text-foreground mb-1">Study Maps</h1>
+          <p className="text-sm text-muted-foreground">
+            {activePreset?.subtitle || customMapName || "Your personal Advaita knowledge graph"} — {exploredCount}/{nodes.length} concepts explored
+          </p>
         </div>
-        <div className="flex gap-2 text-xs">
+        <div className="flex gap-1.5 flex-wrap">
           {Object.entries(NODE_COLORS).map(([level, color]) => (
-            <span key={level} className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-card border border-border text-muted-foreground">
-              <span className="w-2 h-2 rounded-full" style={{ background: color }} />
-              {level}
+            <span key={level} className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-card border border-border text-xs text-muted-foreground">
+              <span className="w-2 h-2 rounded-full" style={{ background: color }} />{level}
             </span>
           ))}
         </div>
       </div>
+
+      {/* Map selector tabs */}
+      <div className="flex gap-2 mb-5 flex-wrap">
+        {mapTabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => tab.id === "custom" ? setShowCustomForm(true) : switchMap(tab.id)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+              activeMapId === tab.id
+                ? "bg-primary text-primary-foreground border-primary"
+                : tab.active
+                ? "bg-primary/10 text-primary border-primary/40"
+                : "bg-card text-muted-foreground border-border hover:text-foreground hover:border-primary/40"
+            }`}
+          >
+            {tab.label}
+            {tab.active && activeMapId !== tab.id && <span className="ml-1.5 text-[10px] opacity-70">(your level)</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* Custom map request form */}
+      {showCustomForm && (
+        <div className="mb-5 bg-card border border-border rounded-xl p-5 space-y-3">
+          <div>
+            <p className="font-serif text-sm font-semibold text-foreground mb-1">Request a custom study map</p>
+            <p className="text-xs text-muted-foreground">Describe what you want to explore — a specific theme, question, or cluster of concepts. The AI will generate a focused map for you.</p>
+          </div>
+          <textarea
+            value={customRequest}
+            onChange={e => setCustomRequest(e.target.value)}
+            placeholder="e.g. 'I want to understand consciousness and the states of awareness' or 'Show me how Maya connects to suffering and liberation'"
+            rows={3}
+            className="w-full px-3 py-2.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+          />
+          <div className="flex gap-2 justify-end">
+            <button onClick={() => setShowCustomForm(false)} className="px-4 py-2 bg-muted text-muted-foreground rounded-lg text-sm">Cancel</button>
+            <button
+              onClick={handleCustomRequest}
+              disabled={!customRequest.trim() || customLoading}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm disabled:opacity-50 hover:opacity-90"
+            >
+              {customLoading ? "Generating…" : "Generate Map"}
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Graph */}
         <div className="lg:col-span-2 bg-card border border-border rounded-xl overflow-hidden">
           <svg
             ref={svgRef}
-            viewBox="0 0 620 520"
-            className="w-full h-96"
+            viewBox="0 0 620 480"
+            className="w-full h-80 sm:h-96"
             style={{ background: "radial-gradient(circle at 50% 50%, hsl(25 82% 49% / 0.03) 0%, transparent 70%)" }}
           >
-            {/* Edges */}
-            {EDGES.map(e => {
-              const from = nodes.find(n => n.id === e.from)!;
-              const to = nodes.find(n => n.id === e.to)!;
+            {edges.map(e => {
+              const from = nodes.find(n => n.id === e.from);
+              const to = nodes.find(n => n.id === e.to);
+              if (!from || !to) return null;
               return (
                 <line
                   key={`${e.from}-${e.to}`}
                   x1={from.x} y1={from.y} x2={to.x} y2={to.y}
-                  stroke="hsl(25 82% 49% / 0.3)"
-                  strokeWidth="1.5"
+                  stroke="hsl(25 82% 49% / 0.3)" strokeWidth="1.5"
                   strokeDasharray={from.explored && to.explored ? "none" : "4 4"}
                 />
               );
             })}
-            {/* Nodes */}
             {nodes.map(node => (
-              <g
-                key={node.id}
-                className="concept-node"
-                onClick={() => setSelected(node.id === selected ? null : node.id)}
-                data-testid={`node-${node.id}`}
-              >
-                <circle
-                  cx={node.x} cy={node.y} r={node.explored ? 22 : 18}
-                  fill={NODE_COLORS[node.level]}
-                  opacity={node.explored ? 0.9 : 0.4}
-                  stroke={selected === node.id ? "white" : "transparent"}
-                  strokeWidth={2}
-                />
-                {node.explored && (
-                  <circle cx={node.x + 14} cy={node.y - 14} r={5} fill="#4ade80" />
-                )}
-                <text
-                  x={node.x} y={node.y + 35}
-                  textAnchor="middle"
-                  fontSize="11"
-                  fill="currentColor"
-                  className="text-foreground"
-                  fontFamily="Playfair Display, serif"
-                >
+              <g key={node.id} className="concept-node" onClick={() => setSelected(node.id === selected ? null : node.id)} data-testid={`node-${node.id}`} style={{ cursor: "pointer" }}>
+                <circle cx={node.x} cy={node.y} r={node.explored ? 22 : 18}
+                  fill={NODE_COLORS[node.level]} opacity={node.explored ? 0.9 : 0.4}
+                  stroke={selected === node.id ? "white" : "transparent"} strokeWidth={2} />
+                {node.explored && <circle cx={node.x + 14} cy={node.y - 14} r={5} fill="#4ade80" />}
+                <text x={node.x} y={node.y + 35} textAnchor="middle" fontSize="11"
+                  fill="currentColor" className="text-foreground" fontFamily="Playfair Display, serif">
                   {node.label}
                 </text>
               </g>
@@ -128,10 +277,7 @@ export default function StudyMap() {
               <span>{Math.round(exploredCount / nodes.length * 100)}% complete</span>
             </div>
             <div className="mt-2 bg-muted rounded-full h-1.5 overflow-hidden">
-              <div
-                className="h-full bg-primary rounded-full transition-all"
-                style={{ width: `${(exploredCount / nodes.length) * 100}%` }}
-              />
+              <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${(exploredCount / nodes.length) * 100}%` }} />
             </div>
           </div>
         </div>
@@ -141,7 +287,10 @@ export default function StudyMap() {
           {selectedNode ? (
             <>
               <div className={`p-4 border-2 rounded-xl ${concept?.color || "bg-card border-border"}`}>
-                <h2 className={`font-serif text-lg font-bold mb-1 ${concept?.accent || "text-foreground"}`}>{selectedNode.label}</h2>
+                <div className="flex items-start justify-between mb-1">
+                  <h2 className={`font-serif text-lg font-bold ${concept?.accent || "text-foreground"}`}>{selectedNode.label}</h2>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-background/60 border border-border text-muted-foreground">{selectedNode.level}</span>
+                </div>
                 <p className="text-xs text-muted-foreground italic mb-2">{concept?.tagline}</p>
                 <p className="text-xs text-foreground leading-relaxed line-clamp-4">{concept?.summary}</p>
               </div>
@@ -151,11 +300,14 @@ export default function StudyMap() {
                     Explore this concept →
                   </button>
                 </Link>
-                <button
-                  onClick={() => toggleExplored(selectedNode.id)}
+                <Link href={`/self-study/${selectedNode.id}`}>
+                  <button className="w-full px-4 py-2 bg-card border border-border text-foreground rounded-lg text-sm hover:bg-muted transition-colors">
+                    📚 Study texts & videos
+                  </button>
+                </Link>
+                <button onClick={() => toggleExplored(selectedNode.id)}
                   className="w-full px-4 py-2 bg-card border border-border text-foreground rounded-lg text-sm hover:bg-muted transition-colors"
-                  data-testid="button-mark-explored"
-                >
+                  data-testid="button-mark-explored">
                   {selectedNode.explored ? "✓ Mark as unexplored" : "Mark as explored"}
                 </button>
               </div>
@@ -170,17 +322,15 @@ export default function StudyMap() {
 
           {/* Concept list */}
           <div className="bg-card border border-border rounded-xl p-4">
-            <h3 className="font-serif text-sm font-semibold mb-3 text-foreground">All Concepts</h3>
+            <h3 className="font-serif text-sm font-semibold mb-3 text-foreground">Concepts in this map</h3>
             <div className="space-y-1.5">
               {nodes.map(n => (
-                <button
-                  key={n.id}
-                  onClick={() => setSelected(n.id)}
+                <button key={n.id} onClick={() => setSelected(n.id)}
                   className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-left transition-colors ${selected === n.id ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"}`}
-                  data-testid={`list-node-${n.id}`}
-                >
+                  data-testid={`list-node-${n.id}`}>
                   <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: NODE_COLORS[n.level], opacity: n.explored ? 1 : 0.4 }} />
                   {n.label}
+                  <span className="text-[10px] text-muted-foreground">{n.level}</span>
                   {n.explored && <span className="ml-auto text-green-500">✓</span>}
                 </button>
               ))}
