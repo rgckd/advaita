@@ -42,6 +42,45 @@ const ARCHIVE_THREADS: Record<string, { subject: string; author: string; date: s
   ],
 };
 
+function linkifyText(text: string) {
+  const urlRegex = /(https?:\/\/[^\s<>")\]]+)/g;
+  const parts = text.split(urlRegex);
+
+  return parts.map((part, idx) => {
+    if (urlRegex.test(part)) {
+      const normalized = part.replace(/^<|>$/g, "");
+      return (
+        <a
+          key={`url-${idx}`}
+          href={normalized}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline break-all"
+        >
+          {normalized}
+        </a>
+      );
+    }
+    return <span key={`txt-${idx}`}>{part}</span>;
+  });
+}
+
+function extractThreadBodyFromHtml(html: string) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+
+  const subject = doc.querySelector("h1")?.textContent?.trim() || doc.title || "Archive Thread";
+  const lis = Array.from(doc.querySelectorAll("ul li"));
+  const fromLi = lis.find(li => li.textContent?.startsWith("From:"))?.textContent?.replace("From:", "").trim() || "";
+  const dateLi = lis.find(li => li.textContent?.startsWith("Date:"))?.textContent?.replace("Date:", "").trim() || "";
+
+  const primaryBody = doc.querySelector("pre")?.textContent?.trim();
+  const fallbackBody = doc.querySelector("tt")?.textContent?.trim();
+  const body = primaryBody || fallbackBody || "";
+
+  return { subject, author: fromLi, date: dateLi, body };
+}
+
 /** Fetches and renders an archive thread inline using a CORS proxy */
 function ArchiveThreadReader({ url, onBack }: { url: string; onBack: () => void }) {
   const [loading, setLoading] = useState(true);
@@ -49,30 +88,55 @@ function ArchiveThreadReader({ url, onBack }: { url: string; onBack: () => void 
   const [content, setContent] = useState<{ subject: string; author: string; date: string; body: string } | null>(null);
 
   useEffect(() => {
-    setLoading(true); setError(null); setContent(null);
-    // Use corsproxy.io to fetch the archive page
-    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-    fetch(proxyUrl)
-      .then(r => r.text())
-      .then(html => {
-        // Parse the HTML to extract email content
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, "text/html");
-        // Advaita-L archive pages have <pre> tags with the email body
-        const pre = doc.querySelector("pre");
-        const subject = doc.querySelector("h1")?.textContent?.trim() || doc.title || "Archive Thread";
-        // Extract From/Date from the <ul> near the top
-        const lis = Array.from(doc.querySelectorAll("ul li"));
-        const fromLi = lis.find(li => li.textContent?.startsWith("From:"))?.textContent?.replace("From:", "").trim() || "";
-        const dateLi = lis.find(li => li.textContent?.startsWith("Date:"))?.textContent?.replace("Date:", "").trim() || "";
-        const body = pre?.textContent?.trim() || "Could not extract thread body. Please open the link directly.";
-        setContent({ subject, author: fromLi, date: dateLi, body });
-        setLoading(false);
-      })
-      .catch(err => {
-        setError("Could not load the thread. Please open it directly.");
-        setLoading(false);
-      });
+    let cancelled = false;
+
+    async function loadThread() {
+      setLoading(true);
+      setError(null);
+      setContent(null);
+
+      try {
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl);
+        const html = await response.text();
+        let extracted = extractThreadBodyFromHtml(html);
+
+        // Fallback: if proxy returns a generic error page or no message body, fetch via r.jina.ai mirror.
+        if (!extracted.body || /not found/i.test(extracted.subject)) {
+          const mirrorUrl = `https://r.jina.ai/http://${url.replace(/^https?:\/\//, "")}`;
+          const mirrorText = await fetch(mirrorUrl).then(r => r.text());
+          const cleaned = mirrorText.trim();
+          if (cleaned) {
+            extracted = {
+              subject: extracted.subject,
+              author: extracted.author,
+              date: extracted.date,
+              body: cleaned,
+            };
+          }
+        }
+
+        if (!extracted.body) {
+          throw new Error("Could not extract thread body");
+        }
+
+        if (!cancelled) {
+          setContent(extracted);
+          setLoading(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setError("Could not load the thread. Please open it directly.");
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadThread();
+
+    return () => {
+      cancelled = true;
+    };
   }, [url]);
 
   return (
@@ -108,9 +172,13 @@ function ArchiveThreadReader({ url, onBack }: { url: string; onBack: () => void 
               {content.author && <p className="text-xs text-muted-foreground">{content.author}</p>}
               {content.date && <p className="text-xs text-muted-foreground">{content.date}</p>}
             </div>
-            <pre className="text-sm text-foreground leading-relaxed whitespace-pre-wrap font-sans bg-card border border-border rounded-xl p-4">
-              {content.body}
-            </pre>
+            <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap break-words font-sans bg-card border border-border rounded-xl p-4 overflow-x-auto">
+              {content.body.split("\n").map((line, i) => (
+                <p key={`line-${i}`} className="mb-2 last:mb-0 break-words">
+                  {linkifyText(line)}
+                </p>
+              ))}
+            </div>
           </div>
         )}
       </div>
