@@ -40,9 +40,10 @@ function buildRecentArchiveMonths(count: number) {
 
 const QUICK_ARCHIVE_MONTHS = buildRecentArchiveMonths(12);
 const MAX_NARKIVE_RESULTS = 6;
+const NARKIVE_BASE_URL = "https://advaita-l.advaita-vedanta.narkive.com/";
 
 function buildBroaderBrowserSearchUrl(query: string) {
-  return `https://www.google.com/search?q=${encodeURIComponent(`site:lists.advaita-vedanta.org OR site:advaita-l.narkive.com ${query}`)}`;
+  return `https://www.google.com/search?q=${encodeURIComponent(`site:lists.advaita-vedanta.org OR site:advaita-l.advaita-vedanta.narkive.com ${query}`)}`;
 }
 
 function stripHtml(value: string) {
@@ -69,9 +70,9 @@ function parseNarkiveResults(html: string, query: string) {
 
     const url = rawHref.startsWith("http")
       ? rawHref
-      : new URL(rawHref, "https://advaita-l.narkive.com/").toString();
+      : new URL(rawHref, NARKIVE_BASE_URL).toString();
 
-    const isThread = /^https:\/\/advaita-l\.narkive\.com\/[A-Za-z0-9]+\/.+/i.test(url);
+    const isThread = /^https:\/\/advaita-l\.advaita-vedanta\.narkive\.com\/[A-Za-z0-9]+\/.+/i.test(url);
     if (!isThread) continue;
     if (!subject.toLowerCase().includes(q)) continue;
     if (seen.has(url)) continue;
@@ -130,7 +131,7 @@ function ArchiveSearch({ query }: { query: string }) {
 
       void (async () => {
         try {
-          const narkiveUrl = `https://advaita-l.narkive.com/?query=${encodeURIComponent(query)}`;
+          const narkiveUrl = `${NARKIVE_BASE_URL}?query=${encodeURIComponent(query)}`;
           const html = await fetch(`https://corsproxy.io/?${encodeURIComponent(narkiveUrl)}`).then(r => r.text());
           if (requestId !== requestIdRef.current) return;
 
