@@ -326,9 +326,49 @@ export default function SelfStudy() {
       {tab === "texts" && (
         <div className="space-y-5">
           {!concept && (
-            <p className="text-sm text-muted-foreground bg-card border border-border rounded-xl p-4">
-              Select a concept above to see curated text excerpts with level-appropriate commentary.
-            </p>
+            /* Library overview — show all texts grouped by level */
+            <div className="space-y-5">
+              {(["jijnasu", "sadhaka", "mumukshu"] as SeekerLevel[]).map(lvl => {
+                const lvlLabel: Record<SeekerLevel, string> = { jijnasu: "Jij\u00f1\u0101su", sadhaka: "S\u0101dhaka", mumukshu: "Mumuk\u1e63u" };
+                // Collect all texts for this level across all concepts
+                const textsForLevel = Object.entries(READINGS).flatMap(([conceptId, readingGroups]) => {
+                  const group = readingGroups.find(g => g.level === lvl);
+                  return (group?.texts || []).map(t => ({ ...t, conceptId }));
+                }).filter(t => filterLevel === "all" || t.level === lvl);
+                if (textsForLevel.length === 0) return null;
+                return (
+                  <div key={lvl}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="flex-1 h-px bg-border" />
+                      <span className="text-xs font-bold text-muted-foreground/70 uppercase tracking-widest">{lvlLabel[lvl]}</span>
+                      <div className="flex-1 h-px bg-border" />
+                    </div>
+                    <div className="space-y-3">
+                      {textsForLevel.map((text, i) => (
+                        <div key={i} className="bg-card border border-border rounded-xl overflow-hidden">
+                          <div className="px-4 py-3 border-b border-border bg-muted/20 flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h2 className="font-serif text-sm font-semibold text-foreground">{text.title}</h2>
+                                <Link href={`/self-study/${text.conceptId}`}>
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary cursor-pointer hover:bg-primary/20 capitalize">{text.conceptId.replace("-", " ")}</span>
+                                </Link>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-0.5">{text.source}</p>
+                            </div>
+                          </div>
+                          <div className="px-4 py-3">
+                            <blockquote className="font-serif text-sm italic leading-relaxed text-foreground border-l-4 border-primary/40 pl-3 line-clamp-3">
+                              "{text.excerpt}"
+                            </blockquote>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
           {concept && allTexts.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-8">No texts for this level selection. Try "All levels".</p>
@@ -370,9 +410,53 @@ export default function SelfStudy() {
       {tab === "videos" && (
         <div className="space-y-4">
           {!concept && (
-            <p className="text-sm text-muted-foreground bg-card border border-border rounded-xl p-4">
-              Select a concept above to see curated video lectures.
-            </p>
+            <div className="space-y-4">
+              {(["jijnasu", "sadhaka", "mumukshu"] as SeekerLevel[]).map(lvl => {
+                const lvlLabel: Record<SeekerLevel, string> = { jijnasu: "Jij\u00f1\u0101su", sadhaka: "S\u0101dhaka", mumukshu: "Mumuk\u1e63u" };
+                const videosForLevel = Object.entries(READINGS).flatMap(([conceptId, readingGroups]) => {
+                  const group = readingGroups.find(g => g.level === lvl);
+                  return (group?.videos || []).map(v => ({ ...v, conceptId }));
+                }).filter(v => filterLevel === "all" || v.level === lvl);
+                if (videosForLevel.length === 0) return null;
+                return (
+                  <div key={lvl}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="flex-1 h-px bg-border" />
+                      <span className="text-xs font-bold text-muted-foreground/70 uppercase tracking-widest">{lvlLabel[lvl]}</span>
+                      <div className="flex-1 h-px bg-border" />
+                    </div>
+                    <div className="space-y-3">
+                      {videosForLevel.map((video, i) => (
+                        <div key={i} className="bg-card border border-border rounded-xl overflow-hidden">
+                          <div className="px-4 py-3 flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h2 className="font-serif text-sm font-semibold text-foreground">{video.title}</h2>
+                                <Link href={`/self-study/${video.conceptId}`}>
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary cursor-pointer capitalize">{video.conceptId.replace("-", " ")}</span>
+                                </Link>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-0.5">{video.channel}</p>
+                            </div>
+                            <button onClick={() => setMediaItem({ kind: "youtube", title: video.title, youtubeId: video.youtubeId })}
+                              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs hover:opacity-90">
+                              ▶ Watch
+                            </button>
+                          </div>
+                          <button onClick={() => setMediaItem({ kind: "youtube", title: video.title, youtubeId: video.youtubeId })}
+                            className="block w-full relative group cursor-pointer">
+                            <img src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`} alt={video.title} className="w-full object-cover" style={{ maxHeight: "160px" }} />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <span className="text-white text-4xl">▶</span>
+                            </div>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
           {concept && allVideos.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-8">No videos for this level selection. Try "All levels".</p>
