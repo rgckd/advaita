@@ -32,7 +32,7 @@ const ARCHIVE_THREADS: Record<string, { subject: string; url: string; preview: s
 };
 
 function buildBrowserSearchUrl(query: string) {
-  return `https://www.google.com/search?q=${encodeURIComponent(`site:lists.advaita-vedanta.org+${query}`)}`;  
+  return `https://www.google.com/search?q=site:lists.advaita-vedanta.org+${encodeURIComponent(query)}`;  
 }
 
 /** Generate the last 12 months in YYYY-Month format */
