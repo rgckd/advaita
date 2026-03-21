@@ -103,7 +103,13 @@ function ArchiveSearch({ query }: { query: string }) {
         setProgress(Math.round((scanned / totalMonths) * 100));
         try {
           const indexUrl = `https://lists.advaita-vedanta.org/archives/advaita-l/${month}/subject.html`;
-          const html = await fetch(`https://corsproxy.io/?${encodeURIComponent(indexUrl)}`).then(r => r.text());
+           const corsUrl = `https://corsproxy.io/?${encodeURIComponent(indexUrl)}`;
+           const response = await fetch(corsUrl);
+           if (!response.ok) {
+             console.warn(`[Explore] Month ${month}: HTTP ${response.status}`);
+             continue;
+           }
+           const html = await response.text();
           // Parse <LI><A HREF="XXXXXX.html">subject line</A>
           const matches = [...html.matchAll(/<A HREF="(\d+\.html)">([^<]+)<\/A>/gi)];
           for (const m of matches) {
@@ -117,7 +123,9 @@ function ArchiveSearch({ query }: { query: string }) {
             }
           }
           setResults([...found]); // update incrementally
-        } catch { /* skip month on error */ }
+         } catch (err) {
+           console.warn(`[Explore] Month ${month}: ${err instanceof Error ? err.message : String(err)}`);
+         }
       }
 
       if (requestId !== requestIdRef.current) return;
