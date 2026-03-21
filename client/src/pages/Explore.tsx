@@ -131,7 +131,7 @@ function ArchiveSearch({ query }: { query: string }) {
       <div className="px-4 py-3 bg-primary/5 border-b border-primary/10">
         <div className="flex items-center justify-between mb-1">
           <p className="text-xs font-semibold text-primary">📚 Advaita-L Archive — “{query}”</p>
-          {loading && <span className="text-[10px] text-muted-foreground">Searching full archive… {progress}%</span>}
+          {loading && <span className="text-[10px] text-muted-foreground">Searching archive subjects… {progress}%</span>}
         </div>
         {loading && <p className="text-[10px] text-muted-foreground mb-1">Scanned {monthsScanned} of {ARCHIVE_MONTHS.length} months</p>}
         {loading && (
@@ -160,19 +160,12 @@ function ArchiveSearch({ query }: { query: string }) {
         )}
       </div>
       <div className="px-4 py-2 border-t border-border/50 flex items-center justify-between">
-        <span className="text-[10px] text-muted-foreground">Searching entire Advaita-L archive in-app</span>
+        <span className="text-[10px] text-muted-foreground">Searching subject lines across the full Advaita-L archive</span>
         <div className="flex items-center gap-3">
-          {loading && (
-            <a href={`https://www.google.com/search?q=site:lists.advaita-vedanta.org+advaita-l+${encodeURIComponent(query)}`}
-              target="_blank" rel="noopener noreferrer"
-              className="text-[10px] text-primary hover:underline transition-colors">
-              Switch to browser now ↗
-            </a>
-          )}
           <a href={`https://www.google.com/search?q=site:lists.advaita-vedanta.org+advaita-l+${encodeURIComponent(query)}`}
             target="_blank" rel="noopener noreferrer"
             className="text-[10px] text-primary/60 hover:text-primary transition-colors">
-            Full browser search ↗
+            {loading ? "Use browser search for faster results ↗" : "Open browser search ↗"}
           </a>
         </div>
       </div>
