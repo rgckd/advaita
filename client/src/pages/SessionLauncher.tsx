@@ -103,13 +103,12 @@ export default function SessionLauncher() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
-      {/* Advaita + levels intro — dismissable */}
+      {/* Advaita + levels intro — dismissable, shown once */}
       {showIntro && (
         <div className="mb-6 bg-card border border-primary/20 rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-border/50 bg-primary/5 flex items-start justify-between gap-3">
             <div>
-              <p className="font-serif text-sm font-semibold text-foreground">Welcome to adv.ai.ta</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Your AI companion for Advaita Vedanta</p>
+              <p className="font-serif text-sm font-semibold text-foreground">Welcome to adv.ai.ta — your AI companion for Advaita Vedanta</p>
             </div>
             <button onClick={() => setShowIntro(false)} className="text-muted-foreground hover:text-foreground text-sm flex-shrink-0">✕</button>
           </div>
@@ -138,10 +137,11 @@ export default function SessionLauncher() {
         </div>
       )}
 
-      {/* Welcome */}
+      {/* Greeting — only shown when intro is dismissed */}
       <div className="mb-6">
-        <h1 className="font-serif text-2xl font-bold text-foreground mb-1">Welcome back, Seeker</h1>
-        <p className="text-muted-foreground text-sm">What calls you today?</p>
+        {!showIntro && (
+          <h1 className="font-serif text-2xl font-bold text-foreground mb-1">What calls you today?</h1>
+        )}
 
         {/* Search */}
         <div className="relative mt-4">

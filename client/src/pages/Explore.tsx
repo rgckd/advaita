@@ -1,5 +1,14 @@
 import { Link } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { store, subscribe, LEVELS } from "@/lib/localStore";
+
+// Map concept levels (Foundation/Intermediate/Advanced) to seeker level labels
+const LEVEL_LABELS: Record<string, string> = {
+  "Foundation":   "Jijñāsu",
+  "Intermediate": "Sādhaka",
+  "Advanced":     "Mumukṣu",
+  "All":          "All",
+};
 
 export const CONCEPTS = [
   {
@@ -72,8 +81,13 @@ export const CONCEPTS = [
 
 export default function Explore() {
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState("All");
+  const [seekerLevel, setSeekerLevel] = useState(store.getLevel());
+  // Default filter to the user's current level (mapped back to concept level string)
+  const levelToConceptLevel: Record<string, string> = { jijnasu: "Foundation", sadhaka: "Intermediate", mumukshu: "Advanced" };
+  const [filter, setFilter] = useState(levelToConceptLevel[store.getLevel()] || "All");
   const [showIntro, setShowIntro] = useState(true);
+
+  useEffect(() => subscribe(() => setSeekerLevel(store.getLevel())), []);
 
   const filtered = CONCEPTS.filter(c => {
     const matchQ = c.name.toLowerCase().includes(query.toLowerCase()) || c.tagline.toLowerCase().includes(query.toLowerCase());
@@ -121,14 +135,18 @@ export default function Explore() {
           className="flex-1 px-4 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
           data-testid="input-concept-search"
         />
-        {["All", "Foundation", "Intermediate", "Advanced"].map(lvl => (
+        {/* Filter pills using Sanskrit level names */}
+        {(["All", "Foundation", "Intermediate", "Advanced"] as const).map(lvl => (
           <button
             key={lvl}
             onClick={() => setFilter(lvl)}
-            className={`px-3 py-2 text-xs rounded-lg border transition-colors ${filter === lvl ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground hover:text-foreground"}`}
+            className={`px-3 py-2 text-xs rounded-lg border transition-colors whitespace-nowrap ${
+              filter === lvl ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground hover:text-foreground"
+            }`}
             data-testid={`button-filter-${lvl.toLowerCase()}`}
+            title={lvl !== "All" ? lvl : undefined}
           >
-            {lvl}
+            {LEVEL_LABELS[lvl]}
           </button>
         ))}
       </div>
@@ -145,7 +163,7 @@ export default function Explore() {
                   <div className="flex items-center gap-3 mb-1">
                     <h2 className={`font-serif text-lg font-bold ${concept.accent}`}>{concept.name}</h2>
                     <span className="text-lg text-muted-foreground font-light">{concept.sanskrit}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-background/60 text-muted-foreground border border-border">{concept.level}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-background/60 text-muted-foreground border border-border">{LEVEL_LABELS[concept.level] || concept.level}</span>
                   </div>
                   <p className="text-xs text-muted-foreground italic mb-2">{concept.tagline}</p>
                   <p className="text-sm text-foreground leading-relaxed line-clamp-2">{concept.summary}</p>
