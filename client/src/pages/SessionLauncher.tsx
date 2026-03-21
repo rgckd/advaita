@@ -32,7 +32,7 @@ const intents: {
   {
     href: "/self-study", icon: "read", title: "Self-study",
     desc: {
-      jijnasu:  "Curated introductory texts, Swami Sarvapriyananda lectures, and upload your own materials.",
+      jijnasu:  "Curated introductory texts and lectures at the Foundation level. Upload your own PDFs, notes, and video links.",
       sadhaka:  "Primary texts with Shankara Bhashya, Panchadashi chapters, and Upanishad commentaries.",
       mumukshu: "Brahma Sutras, Naishkarmya Siddhi, Vichara Sagara — with cross-referencing across the tradition.",
     },
@@ -83,7 +83,7 @@ export default function SessionLauncher() {
   const [reflections, setReflections] = useState<ReflectionWithAttachment[]>(store.getReflections());
   const [seekerLevel, setSeekerLevel] = useState<SeekerLevel>(store.getLevel());
   const [showIntro, setShowIntro] = useState(true);
-  const [showPath, setShowPath] = useState(false);
+  const [showPath, setShowPath] = useState(true); // open by default — key orientation element
 
   useEffect(() => subscribe(() => {
     setReflections(store.getReflections());
@@ -187,24 +187,7 @@ export default function SessionLauncher() {
         <LevelCard />
       </div>
 
-      {/* Intent cards — level-differentiated descriptions */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-        {intents.map(intent => (
-          <Link key={intent.href} href={intent.href}>
-            <div className="p-5 bg-card border border-border rounded-xl cursor-pointer transition-all hover:shadow-md hover:border-primary/40 group">
-              <div className="flex items-start gap-4">
-                <ThemeIcon name={intent.icon} size="sm" />
-                <div>
-                  <h3 className="font-serif text-sm font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">{intent.title}</h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{intent.desc[seekerLevel]}</p>
-                </div>
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      {/* Learning path accordion */}
+      {/* Learning path accordion — above intent cards so it's visible on first load */}
       <div className="bg-card border border-border rounded-xl overflow-hidden mb-6">
         <button onClick={() => setShowPath(p => !p)}
           className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-muted/30 transition-colors">
@@ -247,6 +230,23 @@ export default function SessionLauncher() {
             <p className="text-xs text-muted-foreground italic pt-1">At every step, the AI companion serves as your guru-guide — asking, reflecting, pointing.</p>
           </div>
         )}
+      </div>
+
+      {/* Intent cards — level-differentiated descriptions */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        {intents.map(intent => (
+          <Link key={intent.href} href={intent.href}>
+            <div className="p-5 bg-card border border-border rounded-xl cursor-pointer transition-all hover:shadow-md hover:border-primary/40 group">
+              <div className="flex items-start gap-4">
+                <ThemeIcon name={intent.icon} size="sm" />
+                <div>
+                  <h3 className="font-serif text-sm font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">{intent.title}</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{intent.desc[seekerLevel]}</p>
+                </div>
+              </div>
+            </div>
+          </Link>
+        ))}
       </div>
 
       {/* Today's pointer */}

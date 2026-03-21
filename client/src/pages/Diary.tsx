@@ -102,65 +102,50 @@ export default function Diary() {
             </select>
           </div>
 
-          {/* AI assistant panel */}
-          {showAi && (
-            <div className="rounded-xl border border-primary/20 bg-primary/5 overflow-hidden">
-              {/* AI messages */}
-              <div className="px-4 py-3 space-y-2.5 max-h-40 overflow-y-auto" ref={aiEndRef}>
-                {aiMessages.map((msg, i) => (
-                  <div key={i} className={`flex gap-2 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
-                    {msg.role === "ai" && (
-                      <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span className="text-[9px] text-primary-foreground font-bold">AI</span>
-                      </div>
-                    )}
-                    <div className={`text-xs leading-relaxed rounded-lg px-3 py-2 max-w-[85%] ${
-                      msg.role === "ai"
-                        ? "bg-card border border-border text-foreground font-serif italic"
-                        : "bg-primary/20 text-foreground"
-                    }`}>
-                      {msg.text}
-                    </div>
-                  </div>
-                ))}
-                {aiLoading && (
-                  <div className="flex gap-2">
-                    <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                      <span className="text-[9px] text-primary-foreground font-bold">AI</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground bg-card border border-border rounded-lg px-3 py-2 italic">
-                      reflecting…
-                    </div>
-                  </div>
-                )}
-              </div>
-              {/* Ask AI button */}
-              <div className="px-4 pb-3 flex items-center justify-between border-t border-primary/10 pt-2">
-                <p className="text-[10px] text-muted-foreground">
-                  {content.length > 20 ? "Write more, then ask for a deeper prompt" : "Write something, then ask AI to help you go deeper"}
-                </p>
-                <button
-                  onClick={askAi}
-                  disabled={aiLoading || content.length < 10}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:opacity-90 disabled:opacity-40 transition-opacity"
-                >
-                  ✨ Ask AI
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Reflection textarea */}
+          {/* Reflection textarea with inline AI guidance */}
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Your reflection</label>
+
+            {/* AI opening prompt — shown above textarea, dismissable */}
+            {showAi && aiMessages.length > 0 && (
+              <div className="mb-2 px-3 py-2.5 rounded-lg bg-primary/8 border border-primary/20 flex items-start gap-2">
+                <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-[9px] text-primary-foreground font-bold">AI</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="space-y-1.5 max-h-28 overflow-y-auto" ref={aiEndRef}>
+                    {aiMessages.map((msg, i) => (
+                      <p key={i} className="text-xs font-serif italic text-foreground/90 leading-relaxed">
+                        {msg.text}
+                      </p>
+                    ))}
+                    {aiLoading && <p className="text-xs text-muted-foreground italic">reflecting…</p>}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <textarea
               value={content}
               onChange={e => setContent(e.target.value)}
-              placeholder={showAi ? "Start writing… the AI companion will guide you deeper." : "What did you explore? What questions arose? What feels closer to clarity?"}
+              placeholder="Write here — let the question above guide you..."
               rows={6}
               className="w-full px-3 py-2.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none leading-relaxed"
               data-testid="textarea-reflection"
             />
+
+            {/* Ask AI — inline below textarea */}
+            {showAi && (
+              <div className="flex items-center justify-end mt-1.5">
+                <button
+                  onClick={askAi}
+                  disabled={aiLoading || content.length < 10}
+                  className="flex items-center gap-1.5 px-3 py-1 text-xs text-primary border border-primary/30 rounded-lg hover:bg-primary/10 disabled:opacity-40 transition-colors"
+                >
+                  {aiLoading ? "⌛" : "✨"} Ask AI to go deeper
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Attachment */}
