@@ -16,16 +16,44 @@ export type MediaItem =
  * TextViewer — renders a text excerpt with proper Unicode, plus dynamic archive search.
  * The archive search uses an iframe to load the Advaita-L Google site search inline.
  */
+// Curated Advaita-L archive threads per concept
+const ARCHIVE_THREADS: Record<string, { subject: string; author: string; date: string; url: string; preview: string }[]> = {
+  maya: [
+    { subject: "Maya and the three levels of reality", author: "Srikanta Narayanaswami", date: "Jan 2016", url: "https://lists.advaita-vedanta.org/archives/advaita-l/2016-January/040130.html", preview: "The distinction between Paramarthika, Vyavaharika and Pratibhasika satta is fundamental to Shankara's system..." },
+    { subject: "Is Maya real or unreal?", author: "Vidyasankar Sundaresan", date: "Mar 2012", url: "https://lists.advaita-vedanta.org/archives/advaita-l/2012-March/031277.html", preview: "Shankara says Maya is anirvachaniya — indescribable, neither sat nor asat..." },
+    { subject: "Vivartavada vs Parinama", author: "Ramesh S.", date: "Dec 2016", url: "https://lists.advaita-vedanta.org/archives/advaita-l/2016-December/043613.html", preview: "The distinction between apparent modification (vivarta) and real transformation (parinama) is key to Advaita..." },
+  ],
+  atman: [
+    { subject: "The nature of the Atman as Sakshi", author: "Srinivas Nagulapalli", date: "Feb 2014", url: "https://lists.advaita-vedanta.org/archives/advaita-l/2014-February/036234.html", preview: "Atman as pure witness — not an experiencer, not an agent — is the central insight of the Vivekachudamani..." },
+    { subject: "Pancha Kosha viveka", author: "Vidyasankar Sundaresan", date: "Nov 2010", url: "https://lists.advaita-vedanta.org/archives/advaita-l/2010-November/027845.html", preview: "The five-sheath analysis is a systematic method for discriminating the Atman from what it is not..." },
+  ],
+  brahman: [
+    { subject: "Nirguna and Saguna Brahman", author: "Venkatesh Murthy", date: "Jun 2015", url: "https://lists.advaita-vedanta.org/archives/advaita-l/2015-June/038912.html", preview: "The apparent contradiction between Nirguna Brahman as the absolute and Saguna Brahman as Ishvara resolves when we understand the levels of reality..." },
+    { subject: "Tat Tvam Asi — mahavakya inquiry", author: "Ranjeet Sankar", date: "Apr 2017", url: "https://lists.advaita-vedanta.org/archives/advaita-l/2017-April/044891.html", preview: "The identity statement requires a specific method of interpretation (jahadajahallakshana) to avoid logical contradiction..." },
+  ],
+  avidya: [
+    { subject: "Avidya and its locus", author: "Srikanta Narayanaswami", date: "Sep 2013", url: "https://lists.advaita-vedanta.org/archives/advaita-l/2013-September/035456.html", preview: "The question of whether Avidya resides in the Jiva or Brahman is one of the major post-Shankara debates..." },
+  ],
+  adhyasa: [
+    { subject: "Adhyasa Bhashya — Shankara's preamble", author: "Vidyasankar Sundaresan", date: "Jan 2009", url: "https://lists.advaita-vedanta.org/archives/advaita-l/2009-January/021234.html", preview: "The entire Brahma Sutra commentary rests on the analysis of superimposition in the Adhyasa Bhashya..." },
+  ],
+  "ajata-vada": [
+    { subject: "Ajata Vada and Shankara's Vivartavada", author: "Ramesh S.", date: "Mar 2018", url: "https://lists.advaita-vedanta.org/archives/advaita-l/2018-March/046712.html", preview: "Can Gaudapada's absolute non-origination be reconciled with Shankara's apparent acceptance of creation as appearance?" },
+  ],
+};
+
 function TextViewer({ item }: { item: Extract<MediaItem, { kind: "text" }> }) {
   const [showArchive, setShowArchive] = useState(false);
-  const archiveUrl = item.archiveQuery
-    ? `https://www.google.com/search?q=site:lists.advaita-vedanta.org+advaita-l+${encodeURIComponent(item.archiveQuery)}&igu=1`
+  const query = item.archiveQuery?.toLowerCase().replace(/ /g, "-") || "";
+  const threads = ARCHIVE_THREADS[query] || ARCHIVE_THREADS[item.archiveQuery?.toLowerCase() || ""] || [];
+  const googleSearchUrl = item.archiveQuery
+    ? `https://www.google.com/search?q=site:lists.advaita-vedanta.org+advaita-l+${encodeURIComponent(item.archiveQuery)}`
     : null;
 
   return (
-    <div className="flex flex-col h-full bg-background overflow-hidden">
-      {/* Text content */}
-      <div className={`overflow-auto p-6 sm:p-8 ${showArchive ? "flex-none" : "flex-1"}`} style={showArchive ? { maxHeight: "40%" } : {}}>
+    <div className="flex flex-col h-full bg-background overflow-auto">
+      {/* Text excerpt */}
+      <div className="p-6 sm:p-8 border-b border-border">
         <div className="max-w-2xl mx-auto">
           <h2 className="font-serif text-lg font-semibold text-foreground mb-1">{item.title}</h2>
           {item.source && <p className="text-xs text-muted-foreground mb-5">{item.source}</p>}
@@ -35,24 +63,51 @@ function TextViewer({ item }: { item: Extract<MediaItem, { kind: "text" }> }) {
         </div>
       </div>
 
-      {/* Archive search toggle */}
-      {archiveUrl && (
-        <div className={`flex flex-col ${showArchive ? "flex-1" : "flex-none"} border-t border-border`}>
-          <button
-            onClick={() => setShowArchive(v => !v)}
-            className="flex items-center justify-between px-6 py-2.5 text-xs font-medium text-primary hover:bg-primary/5 transition-colors flex-shrink-0"
-          >
-            <span>📚 Search Advaita-L Archive for related discussions</span>
-            <span>{showArchive ? "▲ Hide" : "▼ Show"}</span>
-          </button>
-          {showArchive && (
-            <iframe
-              src={archiveUrl}
-              title="Advaita-L Archive Search"
-              className="flex-1 border-0"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-            />
-          )}
+      {/* Archive section — curated threads + Google search link */}
+      {item.archiveQuery && (
+        <div className="p-6 sm:p-8">
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-serif text-sm font-semibold text-foreground">
+                📚 Advaita-L Archive — related discussions on {item.archiveQuery}
+              </h3>
+              {googleSearchUrl && (
+                <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer"
+                  className="text-xs text-primary hover:underline flex-shrink-0 ml-3">
+                  Search more →
+                </a>
+              )}
+            </div>
+
+            {threads.length > 0 ? (
+              <div className="space-y-3">
+                {threads.map((t, i) => (
+                  <a key={i} href={t.url} target="_blank" rel="noopener noreferrer"
+                    className="block p-4 bg-card border border-border rounded-xl hover:border-primary/40 hover:bg-primary/5 transition-colors group">
+                    <div className="flex items-start justify-between gap-3 mb-1">
+                      <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors leading-snug">{t.subject}</p>
+                      <span className="text-[10px] text-muted-foreground flex-shrink-0">{t.date}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-1">{t.author}</p>
+                    <p className="text-xs text-muted-foreground/80 italic leading-relaxed line-clamp-2">{t.preview}</p>
+                    <p className="text-[10px] text-primary/60 mt-1.5">🔗 Opens in archive →</p>
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 bg-card border border-border rounded-xl">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Curated threads not yet available for this topic. Search the full archive:
+                </p>
+                {googleSearchUrl && (
+                  <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:opacity-90">
+                    🔍 Search Advaita-L for “{item.archiveQuery}”
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
