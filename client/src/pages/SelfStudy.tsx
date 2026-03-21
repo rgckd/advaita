@@ -361,10 +361,11 @@ export default function SelfStudy() {
                             <div className="flex gap-2 flex-shrink-0">
                               <button
                                 onClick={() => setMediaItem({
-                                  kind: "pdf",
+                                  kind: "text",
                                   title: text.title,
-                                  dataUrl: `data:text/plain;base64,${btoa(unescape(encodeURIComponent(`${text.title}\n${text.source}\n\n"${text.excerpt}"`)))}`,
-                                  mimeType: "text/plain"
+                                  content: text.excerpt,
+                                  source: text.source,
+                                  archiveQuery: text.conceptId,
                                 })}
                                 className="px-3 py-1 bg-primary text-primary-foreground rounded-lg text-xs hover:opacity-90"
                               >
@@ -407,10 +408,11 @@ export default function SelfStudy() {
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${levelBadge[text.level]}`}>{levelLabel[text.level]}</span>
                   <button
                     onClick={() => setMediaItem({
-                      kind: "pdf",
+                      kind: "text",
                       title: text.title,
-                      dataUrl: `data:text/plain;base64,${btoa(unescape(encodeURIComponent(`${text.title}\n${text.source}\n\n"${text.excerpt}"`)))}`,
-                      mimeType: "text/plain"
+                      content: text.excerpt,
+                      source: text.source,
+                      archiveQuery: concept?.name || text.title,
                     })}
                     className="px-3 py-1 bg-primary text-primary-foreground rounded-lg text-xs hover:opacity-90"
                   >

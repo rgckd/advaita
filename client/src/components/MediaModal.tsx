@@ -9,7 +9,55 @@ import { store, subscribe, type Note } from "@/lib/localStore";
 export type MediaItem =
   | { kind: "youtube"; title: string; youtubeId: string }
   | { kind: "pdf"; title: string; dataUrl: string; mimeType?: string }
-  | { kind: "url"; title: string; url: string };
+  | { kind: "url"; title: string; url: string }
+  | { kind: "text"; title: string; content: string; source?: string; archiveQuery?: string };
+
+/**
+ * TextViewer — renders a text excerpt with proper Unicode, plus dynamic archive search.
+ * The archive search uses an iframe to load the Advaita-L Google site search inline.
+ */
+function TextViewer({ item }: { item: Extract<MediaItem, { kind: "text" }> }) {
+  const [showArchive, setShowArchive] = useState(false);
+  const archiveUrl = item.archiveQuery
+    ? `https://www.google.com/search?q=site:lists.advaita-vedanta.org+advaita-l+${encodeURIComponent(item.archiveQuery)}&igu=1`
+    : null;
+
+  return (
+    <div className="flex flex-col h-full bg-background overflow-hidden">
+      {/* Text content */}
+      <div className={`overflow-auto p-6 sm:p-8 ${showArchive ? "flex-none" : "flex-1"}`} style={showArchive ? { maxHeight: "40%" } : {}}>
+        <div className="max-w-2xl mx-auto">
+          <h2 className="font-serif text-lg font-semibold text-foreground mb-1">{item.title}</h2>
+          {item.source && <p className="text-xs text-muted-foreground mb-5">{item.source}</p>}
+          <blockquote className="font-serif text-base leading-relaxed text-foreground border-l-4 border-primary/50 pl-5 italic">
+            “{item.content}”
+          </blockquote>
+        </div>
+      </div>
+
+      {/* Archive search toggle */}
+      {archiveUrl && (
+        <div className={`flex flex-col ${showArchive ? "flex-1" : "flex-none"} border-t border-border`}>
+          <button
+            onClick={() => setShowArchive(v => !v)}
+            className="flex items-center justify-between px-6 py-2.5 text-xs font-medium text-primary hover:bg-primary/5 transition-colors flex-shrink-0"
+          >
+            <span>📚 Search Advaita-L Archive for related discussions</span>
+            <span>{showArchive ? "▲ Hide" : "▼ Show"}</span>
+          </button>
+          {showArchive && (
+            <iframe
+              src={archiveUrl}
+              title="Advaita-L Archive Search"
+              className="flex-1 border-0"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /** Converts a base64 dataUrl to a blob URL, bypassing CSP data: restrictions */
 function PdfViewer({ item }: { item: Extract<MediaItem, { kind: "pdf" }> }) {
@@ -171,6 +219,7 @@ export function MediaModal({ item, onClose, noteContext }: Props) {
               className="w-full h-full border-0"
             />
           )}
+          {item.kind === "text" && <TextViewer item={item} />}
           {item.kind === "pdf" && <PdfViewer item={item} />}
           {item.kind === "url" && (
             <iframe src={item.url} title={item.title} className="w-full h-full border-0"
