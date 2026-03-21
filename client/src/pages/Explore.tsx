@@ -35,22 +35,23 @@ function buildBrowserSearchUrl(query: string) {
   return `https://www.google.com/search?q=site:lists.advaita-vedanta.org+${encodeURIComponent(query)}`;  
 }
 
-/** Generate the last 12 months in YYYY-Month format */
-function generateRecentMonths(): string[] {
+/** Generate the last N months in YYYY-Month format */
+function generateRecentMonths(count: number): string[] {
   const months = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
   ];
   const result: string[] = [];
   const now = new Date();
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < count; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     result.push(`${d.getFullYear()}-${months[d.getMonth()]}`);
   }
   return result;
 }
 
-const QUICK_ARCHIVE_MONTHS = generateRecentMonths();
+// Use a wider scan window (10 years) so classical terms have a better chance of matching.
+const QUICK_ARCHIVE_MONTHS = generateRecentMonths(120);
 
 /** Searches the archive directly by fetching monthly subject indexes via CORS proxy */
 function ArchiveSearch({ query }: { query: string }) {
