@@ -2,6 +2,13 @@ import { Link } from "wouter";
 import { useState, useEffect, useRef } from "react";
 import { store, subscribe, LEVELS } from "@/lib/localStore";
 
+// Type for search results
+interface SearchResult {
+  subject: string;
+  url: string;
+  month: string;
+}
+
 // Curated archive threads per concept (same set as MediaModal)
 const ARCHIVE_THREADS: Record<string, { subject: string; url: string; preview: string }[]> = {
   maya: [
@@ -23,76 +30,31 @@ const ARCHIVE_THREADS: Record<string, { subject: string; url: string; preview: s
   ],
 };
 
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
+function buildBrowserSearchUrl(query: string) {
+  return `https://www.google.com/search?q=${encodeURIComponent(`site:lists.advaita-vedanta.org+${query}`)}`;  
+}
 
-function buildRecentArchiveMonths(count: number) {
+/** Generate the last 12 months in YYYY-Month format */
+function generateRecentMonths(): string[] {
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  const result: string[] = [];
   const now = new Date();
-  const months: string[] = [];
-  for (let offset = 0; offset < count; offset++) {
-    const date = new Date(now.getFullYear(), now.getMonth() - offset, 1);
-    months.push(`${date.getFullYear()}-${MONTH_NAMES[date.getMonth()]}`);
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    result.push(`${d.getFullYear()}-${months[d.getMonth()]}`);
   }
-  return months;
+  return result;
 }
 
-const QUICK_ARCHIVE_MONTHS = buildRecentArchiveMonths(12);
-const MAX_NARKIVE_RESULTS = 6;
-const NARKIVE_BASE_URL = "https://advaita-l.advaita-vedanta.narkive.com/";
-
-function buildBroaderBrowserSearchUrl(query: string) {
-  return `https://www.google.com/search?q=${encodeURIComponent(`site:lists.advaita-vedanta.org OR site:advaita-l.advaita-vedanta.narkive.com ${query}`)}`;
-}
-
-function stripHtml(value: string) {
-  return value
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function parseNarkiveResults(html: string, query: string) {
-  const results: { subject: string; url: string; month: string }[] = [];
-  const seen = new Set<string>();
-  const matches = html.matchAll(/<a[^>]+href="([^"]+)"[^>]*>(.*?)<\/a>/gis);
-  const q = query.toLowerCase();
-
-  for (const match of matches) {
-    const rawHref = match[1];
-    const subject = stripHtml(match[2]);
-    if (!subject) continue;
-
-    const url = rawHref.startsWith("http")
-      ? rawHref
-      : new URL(rawHref, NARKIVE_BASE_URL).toString();
-
-    const isThread = /^https:\/\/advaita-l\.advaita-vedanta\.narkive\.com\/[A-Za-z0-9]+\/.+/i.test(url);
-    if (!isThread) continue;
-    if (!subject.toLowerCase().includes(q)) continue;
-    if (seen.has(url)) continue;
-
-    seen.add(url);
-    results.push({ subject, url, month: "Narkive" });
-    if (results.length >= MAX_NARKIVE_RESULTS) break;
-  }
-
-  return results;
-}
-
-type SearchResult = { subject: string; url: string; month: string };
+const QUICK_ARCHIVE_MONTHS = generateRecentMonths();
 
 /** Searches the archive directly by fetching monthly subject indexes via CORS proxy */
 function ArchiveSearch({ query }: { query: string }) {
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [narkiveResults, setNarkiveResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [narkiveLoading, setNarkiveLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [monthsScanned, setMonthsScanned] = useState(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -102,9 +64,7 @@ function ArchiveSearch({ query }: { query: string }) {
     if (!query.trim() || query.length < 3) {
       requestIdRef.current += 1;
       setResults([]);
-      setNarkiveResults([]);
       setLoading(false);
-      setNarkiveLoading(false);
       setProgress(0);
       setMonthsScanned(0);
       return;
@@ -114,10 +74,9 @@ function ArchiveSearch({ query }: { query: string }) {
     debounceRef.current = setTimeout(async () => {
       const requestId = ++requestIdRef.current;
       setLoading(true); setResults([]); setProgress(0);
-      setNarkiveLoading(true); setNarkiveResults([]);
       setMonthsScanned(0);
       const q = query.toLowerCase();
-      const broaderSearchUrl = buildBroaderBrowserSearchUrl(query);
+      const broaderSearchUrl = buildBrowserSearchUrl(query);
 
       // Check curated threads first (instant)
       const key = q.replace(/ /g, "-");
@@ -128,22 +87,6 @@ function ArchiveSearch({ query }: { query: string }) {
         setProgress(100);
         setMonthsScanned(0);
       }
-
-      void (async () => {
-        try {
-          const narkiveUrl = `${NARKIVE_BASE_URL}?query=${encodeURIComponent(query)}`;
-          const html = await fetch(`https://corsproxy.io/?${encodeURIComponent(narkiveUrl)}`).then(r => r.text());
-          if (requestId !== requestIdRef.current) return;
-
-          const parsed = parseNarkiveResults(html, query);
-          setNarkiveResults(parsed);
-        } catch {
-          if (requestId !== requestIdRef.current) return;
-          setNarkiveResults([]);
-        } finally {
-          if (requestId === requestIdRef.current) setNarkiveLoading(false);
-        }
-      })();
 
       if (curated) return;
 
@@ -225,39 +168,13 @@ function ArchiveSearch({ query }: { query: string }) {
           <p className="px-4 py-3 text-xs text-muted-foreground">Scanning archive months…</p>
         )}
       </div>
-      <div className="border-t border-border/60 bg-muted/20">
-        <div className="px-4 py-2 flex items-center justify-between gap-3">
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Narkive mirror</p>
-          {narkiveLoading && <span className="text-[10px] text-muted-foreground">Checking Narkive…</span>}
-        </div>
-        <div className="divide-y divide-border/50">
-          {narkiveResults.map((result, index) => (
-            <a
-              key={`${result.url}-${index}`}
-              href={result.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-start gap-3 px-4 py-3 hover:bg-primary/5 transition-colors group"
-            >
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors leading-snug">{result.subject}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{result.month}</p>
-              </div>
-              <span className="text-xs text-primary/50 flex-shrink-0 pt-0.5">↗</span>
-            </a>
-          ))}
-          {!narkiveLoading && narkiveResults.length === 0 && (
-            <p className="px-4 py-3 text-xs text-muted-foreground italic">No in-app Narkive hits yet for this query.</p>
-          )}
-        </div>
-      </div>
       <div className="px-4 py-2 border-t border-border/50 flex items-center justify-between">
-        <span className="text-[10px] text-muted-foreground">Quick in-app check across recent Advaita-L threads plus experimental Narkive lookup</span>
+        <span className="text-[10px] text-muted-foreground">Quick in-app check across recent Advaita-L threads</span>
         <div className="flex items-center gap-3">
-          <a href={buildBroaderBrowserSearchUrl(query)}
+          <a href={buildBrowserSearchUrl(query)}
             target="_blank" rel="noopener noreferrer"
             className="text-[10px] text-primary/60 hover:text-primary transition-colors">
-            {(loading || narkiveLoading) ? "Switch to broader browser search ↗" : "Open broader browser search ↗"}
+            {(loading) ? "Switch to broader browser search ↗" : "Open broader browser search ↗"}
           </a>
         </div>
       </div>
