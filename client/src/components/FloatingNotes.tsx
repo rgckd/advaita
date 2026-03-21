@@ -6,12 +6,15 @@ import { AttachmentPicker, AttachmentDisplay } from "@/components/AttachmentPick
 // Pages that have their own built-in writing form — Notes tab is hidden there
 // to avoid confusion between "Quick Notes" (private scratchpad) and the page's
 // primary action (Reflection Diary entry / Satsang thread).
+// Suppress on pages that have their own writing surface
 const SUPPRESS_ON = ["/diary", "/satsang"];
 
 // Derive a human-readable context label from the current route
 function routeLabel(location: string): string {
   if (location.startsWith("/explore/")) return `Concept: ${location.replace("/explore/", "")}`;
   if (location.startsWith("/read/")) return `Reading: ${location.replace("/read/", "")}`;
+  if (location.startsWith("/self-study/")) return `Self-study: ${location.replace("/self-study/", "")}`;
+  if (location === "/self-study") return "Self-study";
   if (location === "/launch") return "Home";
   if (location === "/study-map") return "Study Map";
   if (location === "/diary") return "Diary";

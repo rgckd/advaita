@@ -15,9 +15,12 @@ import Satsang from "@/pages/Satsang";
 import Insights from "@/pages/Insights";
 import Assessment from "@/pages/Assessment";
 import GoDeeper from "@/pages/GoDeeper";
+import SelfStudy from "@/pages/SelfStudy";
 import NotFound from "@/pages/not-found";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
 import { FloatingNotes } from "@/components/FloatingNotes";
+import { SeekerBadge } from "@/components/SeekerBadge";
+import { store, subscribe } from "@/lib/localStore";
 import logoImg from "@assets/logo.jpg";
 import shankaraImg from "@assets/shankara.jpg";
 
@@ -40,6 +43,7 @@ function AppShell() {
   const isFullScreen = FULL_SCREEN_ROUTES.includes(location);
   const [dark, setDark] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [seekerLevel, setSeekerLevel] = useState(store.getLevel());
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
@@ -48,29 +52,20 @@ function AppShell() {
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
   }, [dark]);
+  useEffect(() => subscribe(() => setSeekerLevel(store.getLevel())), []);
 
   // Close sidebar on route change (mobile)
   useEffect(() => { setSidebarOpen(false); }, [location]);
 
+  // Single unified nav — no separate Learning Journey section
   const navItems = [
-    { href: "/launch",    label: "Home",       icon: "🏠" },
-    { href: "/explore",   label: "Explore",    icon: "🔍" },
-    { href: "/study-map", label: "Study Map",  icon: "🗺" },
-    { href: "/diary",     label: "Diary",      icon: "📖" },
-    { href: "/satsang",   label: "Satsang",    icon: "🕉" },
-    { href: "/insights",  label: "Insights",   icon: "✨" },
-    { href: "/assessment",label: "Assessment", icon: "🎯" },
-  ];
-
-  const journeySteps = [
-    { label: "Curiosity",   href: "/launch",    num: 1 },
-    { label: "Exploration", href: "/explore",   num: 2 },
-    { label: "Study Maps",  href: "/study-map", num: 3 },
-    { label: "Read & Listen",href: "/read/maya",num: 4 },
-    { label: "Reflection",  href: "/diary",     num: 5 },
-    { label: "Satsang",     href: "/satsang",   num: 6 },
-    { label: "Insights",    href: "/insights",  num: 7 },
-    { label: "Assessment",  href: "/assessment",num: 8 },
+    { href: "/launch",      label: "Home",        icon: "🏠" },
+    { href: "/explore",     label: "Explore",     icon: "🔍" },
+    { href: "/study-map",   label: "Study Maps",  icon: "🗺" },
+    { href: "/self-study",  label: "Self-study",  icon: "📚" },
+    { href: "/diary",       label: "Reflection",  icon: "🔥" },
+    { href: "/assessment",  label: "Assessment",  icon: "🎯" },
+    { href: "/satsang",     label: "Satsang",     icon: "🕉" },
   ];
 
   if (isFullScreen) {
@@ -85,13 +80,22 @@ function AppShell() {
   // Reusable sidebar content (shared between desktop and mobile drawer)
   const SidebarContent = () => (
     <>
+      {/* Logo */}
       <div className="px-4 py-4 border-b border-border">
         <Link href="/landing">
           <div className="flex flex-col items-center cursor-pointer">
             <LogoImg />
           </div>
         </Link>
+        {/* Seeker level badge under logo */}
+        <div className="flex justify-center mt-2">
+          <Link href="/assessment">
+            <SeekerBadge size="md" />
+          </Link>
+        </div>
       </div>
+
+      {/* Single unified nav */}
       <nav className="flex-1 py-3 overflow-y-auto">
         {navItems.map(item => (
           <Link key={item.href} href={item.href}>
@@ -105,56 +109,22 @@ function AppShell() {
             </div>
           </Link>
         ))}
-
-        {/* Learning Journey mini-map */}
-        <div className="mx-2 mt-3 mb-2">
-          <div className="flex items-center gap-2 px-1 mb-2">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-[9px] font-bold text-muted-foreground/70 uppercase tracking-widest whitespace-nowrap">Learning Journey</span>
-            <div className="flex-1 h-px bg-border" />
+        {/* Go Deeper as a footer nav item */}
+        <Link href="/go-deeper">
+          <div className={`flex items-center gap-3 mx-2 px-3 py-2 rounded-md text-sm cursor-pointer transition-colors mb-0.5 ${
+            location.startsWith("/go-deeper")
+              ? "bg-primary text-primary-foreground font-medium"
+              : "text-sidebar-foreground hover:bg-sidebar-accent"
+          }`}>
+            <span className="text-base">↺</span>
+            Go Deeper
           </div>
-          <div className="rounded-lg bg-muted/40 border border-border/60 px-2 py-1.5">
-            <div className="flex flex-col gap-0">
-              {journeySteps.map((step, i) => (
-                <Link key={step.href} href={step.href}>
-                  <div className={`flex items-center gap-2 py-1 px-1 rounded cursor-pointer transition-colors ${
-                    location.startsWith(step.href) ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground"
-                  }`}>
-                    <span className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                      location.startsWith(step.href) ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                    }`}>{step.num}</span>
-                    <span className="text-xs leading-tight">{step.label}</span>
-                  </div>
-                  {i < journeySteps.length - 1 && <div className="ml-2.5 w-px h-2 bg-border" />}
-                </Link>
-              ))}
-              <div className="ml-2.5 w-px h-2 bg-border" />
-              <div className="flex flex-col gap-0.5">
-                <Link href="/go-deeper">
-                  <div className={`flex items-center gap-2 py-1 px-1 rounded cursor-pointer transition-colors ${
-                    location.startsWith("/go-deeper") ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground"
-                  }`}>
-                    <span className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                      location.startsWith("/go-deeper") ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                    }`}>↺</span>
-                    <span className="text-xs leading-tight">Go Deeper</span>
-                  </div>
-                </Link>
-                <Link href="/explore">
-                  <div className={`flex items-center gap-2 py-1 px-1 rounded cursor-pointer transition-colors ${
-                    location === "/explore" ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground"
-                  }`}>
-                    <span className="flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold bg-muted text-muted-foreground">→</span>
-                    <span className="text-xs leading-tight">Explore More</span>
-                  </div>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
+        </Link>
       </nav>
+
+      {/* Shankara + dark mode */}
       <div className="border-t border-border">
-        <img src={shankaraImg} alt="Adi Shankaracharya" className="w-full object-cover opacity-90" style={{ maxHeight: "180px", objectPosition: "top" }} />
+        <img src={shankaraImg} alt="Adi Shankaracharya" className="w-full object-cover opacity-90" style={{ maxHeight: "140px", objectPosition: "top" }} />
         <div className="p-3">
           <p className="font-serif text-xs text-center text-primary font-semibold leading-tight">वन्दे गुरु परम्पराम् ॥</p>
           <p className="text-[10px] text-center text-muted-foreground italic leading-tight mt-0.5 mb-2">Vande Guru Paramparam — I bow to the lineage of teachers</p>
@@ -227,6 +197,8 @@ function AppShell() {
             <Route path="/explore" component={Explore} />
             <Route path="/study-map" component={StudyMap} />
             <Route path="/read/:id" component={ReadListen} />
+            <Route path="/self-study/:concept" component={SelfStudy} />
+            <Route path="/self-study" component={SelfStudy} />
             <Route path="/diary" component={Diary} />
             <Route path="/satsang" component={Satsang} />
             <Route path="/insights" component={Insights} />
@@ -239,7 +211,7 @@ function AppShell() {
 
         {/* ── Mobile bottom nav bar ── */}
         <nav className="fixed bottom-0 left-0 right-0 z-20 flex md:hidden bg-sidebar border-t border-border">
-          {navItems.slice(0, 5).map(item => (
+          {navItems.slice(0, 5).map(item => ( // Home, Explore, Study Maps, Self-study, Reflection
             <Link key={item.href} href={item.href} className="flex-1">
               <div className={`flex flex-col items-center justify-center py-2 gap-0.5 transition-colors ${
                 location.startsWith(item.href) ? "text-primary" : "text-muted-foreground"
