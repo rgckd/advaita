@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { useState, useEffect, useRef } from "react";
 import { store, subscribe, LEVELS } from "@/lib/localStore";
+import { MediaModal, type MediaItem } from "@/components/MediaModal";
 
 // Type for search results
 interface SearchResult {
@@ -57,6 +58,7 @@ function ArchiveSearch({ query }: { query: string }) {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [monthsScanned, setMonthsScanned] = useState(0);
+  const [selectedResult, setSelectedResult] = useState<MediaItem | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
 
@@ -136,7 +138,8 @@ function ArchiveSearch({ query }: { query: string }) {
   if (!query.trim() || query.length < 3) return null;
 
   return (
-    <div className="mt-2 bg-card border border-primary/20 rounded-xl overflow-hidden">
+    <>
+      <div className="mt-2 bg-card border border-primary/20 rounded-xl overflow-hidden">
       <div className="px-4 py-3 bg-primary/5 border-b border-primary/10">
         <div className="flex items-center justify-between mb-1">
           <p className="text-xs font-semibold text-primary">📚 Advaita-L Archive — “{query}”</p>
@@ -151,15 +154,35 @@ function ArchiveSearch({ query }: { query: string }) {
       </div>
       <div className="divide-y divide-border">
         {results.map((r, i) => (
-          r.url ? (
-            <a key={i} href={r.url} target="_blank" rel="noopener noreferrer"
-              className="flex items-start gap-3 px-4 py-3 hover:bg-primary/5 transition-colors group">
+          r.url && r.month !== "Browser" ? (
+            <div key={i} className="px-4 py-3 border-b border-border bg-muted/20 flex items-start justify-between gap-3 group">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors leading-snug">{r.subject}</p>
+                <p className="text-sm font-medium text-foreground leading-snug">{r.subject}</p>
                 {r.month && <p className="text-[10px] text-muted-foreground mt-0.5">{r.month}</p>}
               </div>
-              <span className="text-xs text-primary/50 flex-shrink-0 pt-0.5">↗</span>
-            </a>
+              <div className="flex gap-2 flex-shrink-0">
+                <button
+                  onClick={() => setSelectedResult({
+                    kind: "text",
+                    title: r.subject,
+                    content: `Thread: ${r.subject}\n\nDate: ${r.month}\n\nThis is a discussion from the Advaita-L mailing list. Click "Read" to view the full thread.`,
+                    source: "Advaita-L Archive",
+                    url: r.url,
+                  })}
+                  className="px-3 py-1 bg-primary text-primary-foreground rounded-lg text-xs hover:opacity-90"
+                >
+                  Read
+                </button>
+                <a
+                  href={r.url}
+                  target="_blank" rel="noopener noreferrer"
+                  className="px-3 py-1 bg-card border border-border text-muted-foreground rounded-lg text-xs hover:text-primary hover:border-primary/40 transition-colors"
+                  title="Open in browser"
+                >
+                  Browser ↗
+                </a>
+              </div>
+            </div>
           ) : (
             <p key={i} className="px-4 py-3 text-xs text-muted-foreground italic">{r.subject}</p>
           )
@@ -178,7 +201,8 @@ function ArchiveSearch({ query }: { query: string }) {
           </a>
         </div>
       </div>
-    </div>
+      {selectedResult && <MediaModal item={selectedResult} onClose={() => setSelectedResult(null)} />}
+    </>
   );
 }
 
