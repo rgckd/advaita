@@ -1,6 +1,109 @@
 import { Link } from "wouter";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { store, subscribe, LEVELS } from "@/lib/localStore";
+
+// Curated archive threads per concept (same set as MediaModal)
+const ARCHIVE_THREADS: Record<string, { subject: string; url: string; preview: string }[]> = {
+  maya: [
+    { subject: "Maya and the three levels of reality", url: "https://lists.advaita-vedanta.org/archives/advaita-l/2016-January/040130.html", preview: "The distinction between Paramarthika, Vyavaharika and Pratibhasika satta..." },
+    { subject: "Is Maya real or unreal?", url: "https://lists.advaita-vedanta.org/archives/advaita-l/2012-March/031277.html", preview: "Shankara says Maya is anirvachaniya — indescribable, neither sat nor asat..." },
+  ],
+  atman: [
+    { subject: "The nature of the Atman as Sakshi", url: "https://lists.advaita-vedanta.org/archives/advaita-l/2014-February/036234.html", preview: "Atman as pure witness — not an experiencer, not an agent..." },
+  ],
+  brahman: [
+    { subject: "Nirguna and Saguna Brahman", url: "https://lists.advaita-vedanta.org/archives/advaita-l/2015-June/038912.html", preview: "The apparent contradiction between Nirguna Brahman as the absolute and Saguna Brahman as Ishvara..." },
+    { subject: "Tat Tvam Asi — mahavakya inquiry", url: "https://lists.advaita-vedanta.org/archives/advaita-l/2017-April/044891.html", preview: "The identity statement requires jahadajahallakshana to avoid logical contradiction..." },
+  ],
+  avidya: [
+    { subject: "Avidya and its locus", url: "https://lists.advaita-vedanta.org/archives/advaita-l/2013-September/035456.html", preview: "The question of whether Avidya resides in the Jiva or Brahman..." },
+  ],
+  adhyasa: [
+    { subject: "Adhyasa Bhashya — Shankara's preamble", url: "https://lists.advaita-vedanta.org/archives/advaita-l/2009-January/021234.html", preview: "The entire Brahma Sutra commentary rests on the analysis of superimposition..." },
+  ],
+};
+
+/** Inline archive search used when query doesn't match any known concept */
+function ArchiveSearch({ query }: { query: string }) {
+  const [results, setResults] = useState<{ subject: string; url: string; snippet: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!query.trim() || query.length < 3) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setLoading(true);
+      setSearched(query);
+      const key = query.toLowerCase().replace(/ /g, "-");
+      // First check curated threads
+      const curated = ARCHIVE_THREADS[key] || ARCHIVE_THREADS[query.toLowerCase()];
+      if (curated) {
+        setResults(curated.map(t => ({ subject: t.subject, url: t.url, snippet: t.preview })));
+        setLoading(false);
+        return;
+      }
+      // Otherwise fetch via CORS proxy
+      const searchUrl = `https://www.google.com/search?q=site:lists.advaita-vedanta.org+advaita-l+${encodeURIComponent(query)}`;
+      fetch(`https://corsproxy.io/?${encodeURIComponent(searchUrl)}`)
+        .then(r => r.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, "text/html");
+          const anchors = Array.from(doc.querySelectorAll("a[href]")) as HTMLAnchorElement[];
+          const links = anchors
+            .map(a => ({ url: decodeURIComponent(a.href.replace(/^\/url\?q=/, "").split("&")[0]), subject: a.textContent?.trim() || "" }))
+            .filter(r => r.url.startsWith("https://lists.advaita-vedanta.org") && r.url.endsWith(".html") && r.subject.length > 5)
+            .slice(0, 6);
+          setResults(links.map(l => ({ ...l, snippet: "" })));
+          if (links.length === 0) setResults([{ subject: "No results found in archive for this query.", url: "", snippet: "" }]);
+          setLoading(false);
+        })
+        .catch(() => {
+          setResults([{ subject: "Could not reach archive. Try again.", url: "", snippet: "" }]);
+          setLoading(false);
+        });
+    }, 600);
+  }, [query]);
+
+  if (!query.trim() || query.length < 3) return null;
+
+  return (
+    <div className="mt-2 bg-card border border-primary/20 rounded-xl overflow-hidden">
+      <div className="px-4 py-3 bg-primary/5 border-b border-primary/10 flex items-center justify-between">
+        <p className="text-xs font-semibold text-primary">📚 Advaita-L Archive results for “{query}”</p>
+        {loading && <span className="text-xs text-muted-foreground">Searching…</span>}
+      </div>
+      <div className="divide-y divide-border">
+        {results.map((r, i) => (
+          r.url ? (
+            <a key={i} href={r.url} target="_blank" rel="noopener noreferrer"
+              className="flex items-start gap-3 px-4 py-3 hover:bg-primary/5 transition-colors group">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors leading-snug">{r.subject}</p>
+                {r.snippet && <p className="text-xs text-muted-foreground/80 italic mt-0.5 line-clamp-1">{r.snippet}</p>}
+              </div>
+              <span className="text-xs text-primary/50 flex-shrink-0 pt-0.5">↗</span>
+            </a>
+          ) : (
+            <p key={i} className="px-4 py-3 text-xs text-muted-foreground">{r.subject}</p>
+          )
+        ))}
+        {!loading && results.length === 0 && (
+          <p className="px-4 py-3 text-xs text-muted-foreground">Searching archive…</p>
+        )}
+      </div>
+      <div className="px-4 py-2 border-t border-border/50">
+        <a href={`https://www.google.com/search?q=site:lists.advaita-vedanta.org+advaita-l+${encodeURIComponent(query)}`}
+          target="_blank" rel="noopener noreferrer"
+          className="text-[10px] text-primary/60 hover:text-primary transition-colors">
+          Open full search in browser ↗
+        </a>
+      </div>
+    </div>
+  );
+}
 
 // Map concept levels (Foundation/Intermediate/Advanced) to seeker level labels
 const LEVEL_LABELS: Record<string, string> = {
@@ -86,6 +189,7 @@ export default function Explore() {
   const levelToConceptLevel: Record<string, string> = { jijnasu: "Foundation", sadhaka: "Intermediate", mumukshu: "Advanced" };
   const [filter, setFilter] = useState(levelToConceptLevel[store.getLevel()] || "All");
   const [showIntro, setShowIntro] = useState(true);
+  const [archiveQuery, setArchiveQuery] = useState(""); // separate state for explicit archive search
 
   useEffect(() => subscribe(() => setSeekerLevel(store.getLevel())), []);
 
@@ -129,7 +233,7 @@ export default function Explore() {
       <div className="flex gap-3 mb-6">
         <input
           type="search"
-          placeholder="Search concepts..."
+          placeholder="Search concepts or any Vedanta topic…"
           value={query}
           onChange={e => setQuery(e.target.value)}
           className="flex-1 px-4 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -150,6 +254,25 @@ export default function Explore() {
           </button>
         ))}
       </div>
+
+      {/* Archive search — auto-triggers when query doesn't match any concept */}
+      {(query.trim().length >= 3 && filtered.length === 0) || archiveQuery ? (
+        <>
+          <ArchiveSearch query={archiveQuery || query} />
+          {archiveQuery && (
+            <button onClick={() => setArchiveQuery("")}
+              className="text-xs text-muted-foreground hover:text-primary mb-2">
+              ← Back to concepts
+            </button>
+          )}
+        </>
+      ) : query.trim().length >= 3 && filtered.length > 0 ? (
+        <div className="mb-4 px-3 py-2 bg-muted/40 border border-border/60 rounded-lg flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">{filtered.length} concept{filtered.length !== 1 ? "s" : ""} found — looking for something else?</p>
+          <button onClick={() => setArchiveQuery(query)}
+            className="text-xs text-primary hover:underline ml-2">Search archive →</button>
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-4">
         {filtered.map(concept => (
