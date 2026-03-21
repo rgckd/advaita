@@ -201,6 +201,7 @@ function ArchiveSearch({ query }: { query: string }) {
           </a>
         </div>
       </div>
+      </div>
       {selectedResult && <MediaModal item={selectedResult} onClose={() => setSelectedResult(null)} />}
     </>
   );
