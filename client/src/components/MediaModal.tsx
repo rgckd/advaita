@@ -118,17 +118,100 @@ function ArchiveThreadReader({ url, onBack }: { url: string; onBack: () => void 
   );
 }
 
+/** Fetches archive search results via CORS proxy and shows them as readable thread cards */
+function ArchiveSearchResults({ query, onSelectThread, onBack }: {
+  query: string;
+  onSelectThread: (url: string) => void;
+  onBack: () => void;
+}) {
+  const [loading, setLoading] = useState(true);
+  const [results, setResults] = useState<{ subject: string; url: string; snippet: string }[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true); setError(null);
+    // Fetch the Google search via corsproxy — parse out archive links
+    const searchUrl = `https://www.google.com/search?q=site:lists.advaita-vedanta.org+advaita-l+${encodeURIComponent(query)}`;
+    fetch(`https://corsproxy.io/?${encodeURIComponent(searchUrl)}`)
+      .then(r => r.text())
+      .then(html => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+        // Extract result links — Google wraps them in <a> tags inside result divs
+        const anchors = Array.from(doc.querySelectorAll("a[href]")) as HTMLAnchorElement[];
+        const archiveLinks = anchors
+          .filter(a => a.href.includes("lists.advaita-vedanta.org") || a.textContent?.includes("advaita-vedanta"))
+          .map(a => {
+            const url = a.href.replace(/^\/url\?q=/, "").split("&")[0];
+            const subject = a.textContent?.trim() || url;
+            const parent = a.closest("div") || a.parentElement;
+            const snippet = parent?.textContent?.replace(subject, "").trim().slice(0, 120) || "";
+            return { subject, url: decodeURIComponent(url), snippet };
+          })
+          .filter(r => r.url.startsWith("https://lists.advaita-vedanta.org") && r.url.endsWith(".html"))
+          .slice(0, 8);
+
+        if (archiveLinks.length > 0) {
+          setResults(archiveLinks);
+        } else {
+          // Fallback: show curated threads for this query
+          const key = query.toLowerCase().replace(/ /g, "-");
+          const curated = ARCHIVE_THREADS[key] || ARCHIVE_THREADS[query.toLowerCase()] || [];
+          setResults(curated.map(t => ({ subject: t.subject, url: t.url, snippet: t.preview })));
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        // On proxy failure, fall back to curated threads
+        const key = query.toLowerCase().replace(/ /g, "-");
+        const curated = ARCHIVE_THREADS[key] || ARCHIVE_THREADS[query.toLowerCase()] || [];
+        if (curated.length > 0) {
+          setResults(curated.map(t => ({ subject: t.subject, url: t.url, snippet: t.preview })));
+        } else {
+          setError("Could not load search results.");
+        }
+        setLoading(false);
+      });
+  }, [query]);
+
+  return (
+    <div className="flex flex-col h-full bg-background overflow-hidden">
+      <div className="flex items-center gap-3 px-5 py-3 border-b border-border bg-muted/20 flex-shrink-0">
+        <button onClick={onBack} className="text-xs text-primary hover:underline">← Back</button>
+        <p className="text-xs font-medium text-foreground">Search results for “{query}” in Advaita-L</p>
+      </div>
+      <div className="flex-1 overflow-auto p-5">
+        {loading && <p className="text-sm text-muted-foreground">Searching archive...</p>}
+        {error && <p className="text-sm text-muted-foreground">{error}</p>}
+        {!loading && !error && results.length === 0 && (
+          <p className="text-sm text-muted-foreground">No results found in archive for this topic.</p>
+        )}
+        <div className="space-y-3">
+          {results.map((r, i) => (
+            <button key={i} onClick={() => onSelectThread(r.url)}
+              className="w-full text-left p-4 bg-card border border-border rounded-xl hover:border-primary/40 hover:bg-primary/5 transition-colors group">
+              <p className="text-sm font-medium text-foreground group-hover:text-primary leading-snug mb-1">{r.subject}</p>
+              {r.snippet && <p className="text-xs text-muted-foreground/80 italic leading-relaxed line-clamp-2">{r.snippet}</p>}
+              <p className="text-[10px] text-primary mt-1.5">📖 Read this thread →</p>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TextViewer({ item }: { item: Extract<MediaItem, { kind: "text" }> }) {
   const [activeThread, setActiveThread] = useState<string | null>(null);
+  const [showSearch, setShowSearch] = useState(false);
   const query = item.archiveQuery?.toLowerCase().replace(/ /g, "-") || "";
   const threads = ARCHIVE_THREADS[query] || ARCHIVE_THREADS[item.archiveQuery?.toLowerCase() || ""] || [];
-  const googleSearchUrl = item.archiveQuery
-    ? `https://www.google.com/search?q=site:lists.advaita-vedanta.org+advaita-l+${encodeURIComponent(item.archiveQuery)}`
-    : null;
 
-  // When a thread is active, show the inline reader (no notes panel needed — handled by parent)
   if (activeThread) {
     return <ArchiveThreadReader url={activeThread} onBack={() => setActiveThread(null)} />;
+  }
+  if (showSearch && item.archiveQuery) {
+    return <ArchiveSearchResults query={item.archiveQuery} onSelectThread={setActiveThread} onBack={() => setShowSearch(false)} />;
   }
 
   return (
@@ -144,7 +227,7 @@ function TextViewer({ item }: { item: Extract<MediaItem, { kind: "text" }> }) {
         </div>
       </div>
 
-      {/* Archive section — curated threads, click to read inline */}
+      {/* Archive section — curated threads + search */}
       {item.archiveQuery && (
         <div className="p-6 sm:p-8">
           <div className="max-w-2xl mx-auto">
@@ -152,12 +235,13 @@ function TextViewer({ item }: { item: Extract<MediaItem, { kind: "text" }> }) {
               <h3 className="font-serif text-sm font-semibold text-foreground">
                 📚 Advaita-L Archive — related discussions
               </h3>
-              {googleSearchUrl && (
-                <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer"
-                  className="text-xs text-primary hover:underline flex-shrink-0 ml-3">
-                  Search more →
-                </a>
-              )}
+              {/* Search more — loads results inline */}
+              <button
+                onClick={() => setShowSearch(true)}
+                className="text-xs text-primary hover:underline flex-shrink-0 ml-3"
+              >
+                Search more →
+              </button>
             </div>
 
             {threads.length > 0 ? (
@@ -181,14 +265,14 @@ function TextViewer({ item }: { item: Extract<MediaItem, { kind: "text" }> }) {
             ) : (
               <div className="p-4 bg-card border border-border rounded-xl">
                 <p className="text-sm text-muted-foreground mb-3">
-                  Curated threads not yet available for this topic. Search the full archive:
+                  No curated threads yet for this topic.
                 </p>
-                {googleSearchUrl && (
-                  <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:opacity-90">
-                    🔍 Search Advaita-L for “{item.archiveQuery}”
-                  </a>
-                )}
+                <button
+                  onClick={() => setShowSearch(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:opacity-90"
+                >
+                  🔍 Search Advaita-L archive in-app
+                </button>
               </div>
             )}
           </div>

@@ -375,9 +375,9 @@ export default function SelfStudy() {
                                 href={`https://www.google.com/search?q=site:lists.advaita-vedanta.org+advaita-l+${encodeURIComponent(text.conceptId.replace("-", "+"))}`}
                                 target="_blank" rel="noopener noreferrer"
                                 className="px-3 py-1 bg-card border border-border text-muted-foreground rounded-lg text-xs hover:text-primary hover:border-primary/40 transition-colors"
-                                title="Search Advaita-L archive"
+                                title="Open in browser"
                               >
-                                Archive
+                                Browser ↗
                               </a>
                             </div>
                           </div>
