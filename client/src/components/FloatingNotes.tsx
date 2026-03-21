@@ -30,6 +30,7 @@ export function FloatingNotes() {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"write" | "all">("write");
   const [draft, setDraft] = useState("");
+  const [isPublic, setIsPublic] = useState(false); // default: private
   const [notes, setNotes] = useState<Note[]>(store.getNotes());
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState("");
@@ -49,7 +50,7 @@ export function FloatingNotes() {
 
   function saveNote() {
     if (!draft.trim()) return;
-    store.addNote(draft.trim(), context);
+    store.addNote(draft.trim(), context, undefined, undefined);
     setDraft("");
   }
 
@@ -109,29 +110,39 @@ export function FloatingNotes() {
           style={{ right: 0, top: "10%", width: 320, maxHeight: "80vh", borderRadius: "12px 0 0 12px" }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30 flex-shrink-0">
-            <div>
-              <p className="text-xs font-bold text-foreground">Quick Notes</p>
-              <p className="text-[10px] text-muted-foreground/80 leading-tight mb-0.5">Private scratchpad — not saved to Diary</p>
-              <p className="text-[10px] text-muted-foreground truncate max-w-[180px]">
-                📍 {context}
+          <div className="px-4 py-3 border-b border-border bg-muted/30 flex-shrink-0">
+            {/* Title row */}
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <p className="text-xs font-bold text-foreground">Notes — {context}</p>
                 {currentNotes.length > 0 && (
-                  <span className="ml-1 text-primary">· {currentNotes.length} note{currentNotes.length !== 1 ? "s" : ""} here</span>
+                  <p className="text-[10px] text-primary mt-0.5">{currentNotes.length} note{currentNotes.length !== 1 ? "s" : ""} here</p>
                 )}
-              </p>
-            </div>
-            <div className="flex gap-1">
+              </div>
               <button
-                onClick={() => setView("write")}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-colors ${view === "write" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                onClick={() => setView(v => v === "write" ? "all" : "write")}
+                className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
               >
-                Write
+                {view === "write" ? `All (${allNotes.length})` : "Write"}
+              </button>
+            </div>
+            {/* Public / Private toggle */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsPublic(false)}
+                className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-medium border transition-colors ${
+                  !isPublic ? "bg-card text-foreground border-border" : "bg-transparent text-muted-foreground border-transparent hover:border-border"
+                }`}
+              >
+                🔒 Private
               </button>
               <button
-                onClick={() => setView("all")}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-colors ${view === "all" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                onClick={() => setIsPublic(true)}
+                className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-medium border transition-colors ${
+                  isPublic ? "bg-primary/10 text-primary border-primary/30" : "bg-transparent text-muted-foreground border-transparent hover:border-border"
+                }`}
               >
-                All ({allNotes.length})
+                🌐 Share to Satsang
               </button>
             </div>
           </div>
@@ -146,23 +157,23 @@ export function FloatingNotes() {
                 onKeyDown={e => {
                   if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) saveNote();
                 }}
-                placeholder={`Jot a quick note while you study ${context}\u2026\n\nThis is a private scratchpad. Use the Diary for deeper reflections.\n\nCmd/Ctrl+Enter to save`}
+                placeholder={`Note on ${context}\u2026`}
                 className="flex-1 resize-none px-4 py-3 text-sm text-foreground bg-transparent placeholder:text-muted-foreground/60 focus:outline-none border-none"
                 style={{ minHeight: "120px", maxHeight: "180px" }}
                 data-testid="textarea-quick-note"
               />
 
               <div className="px-4 pb-3 flex items-center justify-between border-t border-border pt-2 flex-shrink-0">
-                <a href="#/diary" className="text-[10px] text-primary/70 hover:text-primary transition-colors" title="Go to Reflection Diary">
-                  📖 Open Diary
-                </a>
+                <span className="text-[10px] text-muted-foreground">
+                  {isPublic ? "🌐 Will appear in Satsang" : "🔒 Private"} · ⌘+↩
+                </span>
                 <button
                   onClick={saveNote}
                   disabled={!draft.trim()}
                   className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-40"
                   data-testid="button-save-note"
                 >
-                  Save Note
+                  Save
                 </button>
               </div>
 
@@ -261,6 +272,7 @@ function NoteCard({
         <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
             <p className="text-xs text-foreground leading-relaxed whitespace-pre-wrap">{note.content}</p>
+            <span className="text-[9px] text-muted-foreground/60">{(note as any).isPublic ? "🌐 Shared" : "🔒 Private"}</span>
           </div>
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 pt-0.5">
             <button onClick={() => onEdit(note)} className="text-muted-foreground hover:text-primary transition-colors text-[11px]" title="Edit">✏</button>
