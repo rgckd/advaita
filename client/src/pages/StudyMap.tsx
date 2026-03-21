@@ -356,20 +356,61 @@ export default function StudyMap() {
               </div>
             </>
           ) : (
-            <div className="p-6 bg-card border border-border rounded-xl text-center">
-              {/* Network/graph icon — more appropriate than world map */}
-              <svg className="w-12 h-12 mx-auto mb-3 text-primary/60" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <circle cx="24" cy="10" r="4" fill="currentColor" opacity="0.7"/>
-                <circle cx="10" cy="34" r="4" fill="currentColor" opacity="0.7"/>
-                <circle cx="38" cy="34" r="4" fill="currentColor" opacity="0.7"/>
-                <circle cx="24" cy="28" r="3" fill="currentColor" opacity="0.4"/>
-                <line x1="24" y1="14" x2="24" y2="25"/>
-                <line x1="24" y1="25" x2="13" y2="31"/>
-                <line x1="24" y1="25" x2="35" y2="31"/>
-                <line x1="13" y1="31" x2="35" y2="31" strokeDasharray="3 3" opacity="0.4"/>
-              </svg>
-              <p className="font-serif text-sm font-medium text-foreground mb-1">Your Knowledge Graph</p>
-              <p className="text-xs text-muted-foreground">Click any concept node to explore its details and connections.</p>
+            <div className="bg-card border border-border rounded-xl p-4">
+              <p className="font-serif text-sm font-semibold text-foreground mb-3">Maps worked on</p>
+              <div className="space-y-3">
+                {/* Preset maps — show progress for each */}
+                {Object.entries(PRESET_MAPS).map(([id, map]) => {
+                  const explored = map.nodes.filter(n => n.explored).length;
+                  const total = map.nodes.length;
+                  const pct = Math.round((explored / total) * 100);
+                  const levelLabel: Record<string, string> = { jijnasu: "Jij\u00f1\u0101su", sadhaka: "S\u0101dhaka", mumukshu: "Mumuk\u1e63u" };
+                  return (
+                    <div key={id}>
+                      <div className="flex items-center justify-between mb-1">
+                        <button
+                          onClick={() => switchMap(id)}
+                          className={`text-xs font-medium hover:text-primary transition-colors ${
+                            activeMapId === id && savedMapId === null ? "text-primary" : "text-foreground"
+                          }`}
+                        >
+                          {levelLabel[id]} Map
+                        </button>
+                        <span className="text-[10px] text-muted-foreground">{explored}/{total} concepts · {pct}%</span>
+                      </div>
+                      <div className="h-1 bg-muted rounded-full overflow-hidden">
+                        <div className="h-full bg-primary/60 rounded-full" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+                {/* Custom saved maps */}
+                {savedMaps.length > 0 && (
+                  <>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide pt-1">Custom maps</p>
+                    {savedMaps.map(m => {
+                      const explored = m.nodes.filter(n => n.explored).length;
+                      const pct = Math.round((explored / m.nodes.length) * 100);
+                      return (
+                        <div key={m.id}>
+                          <div className="flex items-center justify-between mb-1">
+                            <button onClick={() => loadSavedMap(m)}
+                              className={`text-xs font-medium truncate max-w-[160px] hover:text-primary transition-colors ${
+                                savedMapId === m.id ? "text-primary" : "text-foreground"
+                              }`}
+                            >{m.name}</button>
+                            <span className="text-[10px] text-muted-foreground">{explored}/{m.nodes.length} · {pct}%</span>
+                          </div>
+                          <div className="h-1 bg-muted rounded-full overflow-hidden">
+                            <div className="h-full bg-primary/60 rounded-full" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-3">Click a concept node to explore its details.</p>
             </div>
           )}
 

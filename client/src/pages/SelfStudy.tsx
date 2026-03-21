@@ -559,8 +559,79 @@ export default function SelfStudy() {
         </div>
       )}
 
+      {/* Studied so far — persistent summary below all tab content */}
+      {(allNotes.length > 0 || uploads.length > 0) && (
+        <div className="mt-8 bg-card border border-border rounded-xl p-4">
+          <p className="font-serif text-sm font-semibold text-foreground mb-3">Studied so far</p>
+          <div className="space-y-4">
+            {/* Concepts with notes (shows which concepts you've engaged with) */}
+            {(() => {
+              const studiedConcepts = [...new Set(
+                allNotes
+                  .filter(n => n.context.startsWith("Self-study:"))
+                  .map(n => n.context.replace("Self-study:", "").trim())
+              )];
+              return studiedConcepts.length > 0 ? (
+                <div>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Concepts with notes</p>
+                  <div className="flex flex-wrap gap-2">
+                    {studiedConcepts.map(c => (
+                      <Link key={c} href={`/self-study/${c}`}>
+                        <span className="px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full text-xs cursor-pointer hover:bg-primary/20 transition-colors capitalize">
+                          {c}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ) : null;
+            })()}
+
+            {/* Uploaded materials */}
+            {uploads.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">My uploaded materials ({uploads.length})</p>
+                <div className="space-y-1.5">
+                  {uploads.slice(0, 5).map(u => (
+                    <div key={u.id} className="flex items-center gap-2">
+                      <span className="text-sm">{u.type === "pdf" ? "📄" : "▶"}</span>
+                      <button
+                        onClick={() => {
+                          if (u.type === "pdf" && u.dataUrl) setMediaItem({ kind: "pdf", title: u.name, dataUrl: u.dataUrl, mimeType: "application/pdf" });
+                          else if (u.url) {
+                            const ytMatch = u.url.match(/(?:v=|youtu\.be\/)([^&?/]+)/);
+                            if (ytMatch) setMediaItem({ kind: "youtube", title: u.name, youtubeId: ytMatch[1] });
+                            else setMediaItem({ kind: "url", title: u.name, url: u.url });
+                          }
+                        }}
+                        className="text-xs text-foreground hover:text-primary transition-colors truncate max-w-xs text-left"
+                      >
+                        {u.name}
+                      </button>
+                      {u.concept && <span className="text-[10px] text-muted-foreground ml-auto">{u.concept}</span>}
+                    </div>
+                  ))}
+                  {uploads.length > 5 && (
+                    <button onClick={() => setTab("uploads")} className="text-xs text-primary hover:underline">
+                      View all {uploads.length} uploads →
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Notes count across self-study */}
+            {allNotes.filter(n => n.context.startsWith("Self-study")).length > 0 && (
+              <p className="text-[10px] text-muted-foreground">
+                {allNotes.filter(n => n.context.startsWith("Self-study")).length} notes taken across self-study sessions
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Footer nav */}
-      <div className="mt-10 flex justify-between items-center pt-6 border-t border-border">
+      <div className="mt-6 flex justify-between items-center pt-6 border-t border-border">
         <p className="text-sm text-muted-foreground">Ready to reflect?</p>
         <Link href="/diary">
           <button className="px-5 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:opacity-90 transition-opacity">
