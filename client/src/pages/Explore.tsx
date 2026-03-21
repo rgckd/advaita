@@ -23,26 +23,22 @@ const ARCHIVE_THREADS: Record<string, { subject: string; url: string; preview: s
   ],
 };
 
-const ARCHIVE_START_YEAR = 1998;
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
 
-function buildArchiveMonths(startYear: number) {
+function buildRecentArchiveMonths(count: number) {
   const now = new Date();
   const months: string[] = [];
-  for (let year = now.getFullYear(); year >= startYear; year--) {
-    for (let month = 11; month >= 0; month--) {
-      if (year === now.getFullYear() && month > now.getMonth()) continue;
-      months.push(`${year}-${MONTH_NAMES[month]}`);
-    }
+  for (let offset = 0; offset < count; offset++) {
+    const date = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+    months.push(`${date.getFullYear()}-${MONTH_NAMES[date.getMonth()]}`);
   }
   return months;
 }
 
-// Full archive month list, newest to oldest.
-const ARCHIVE_MONTHS = buildArchiveMonths(ARCHIVE_START_YEAR);
+const QUICK_ARCHIVE_MONTHS = buildRecentArchiveMonths(12);
 
 /** Searches the archive directly by fetching monthly subject indexes via CORS proxy */
 function ArchiveSearch({ query }: { query: string }) {
@@ -81,12 +77,12 @@ function ArchiveSearch({ query }: { query: string }) {
         return;
       }
 
-      // Fetch monthly subject indexes across the full archive
+      // Quick lookup: fetch recent monthly subject indexes via CORS proxy.
       const found: { subject: string; url: string; month: string }[] = [];
-      const totalMonths = ARCHIVE_MONTHS.length;
+      const totalMonths = QUICK_ARCHIVE_MONTHS.length;
       for (let i = 0; i < totalMonths; i++) {
         if (requestId !== requestIdRef.current) return;
-        const month = ARCHIVE_MONTHS[i];
+        const month = QUICK_ARCHIVE_MONTHS[i];
         const scanned = i + 1;
         setMonthsScanned(scanned);
         setProgress(Math.round((scanned / totalMonths) * 100));
@@ -114,7 +110,7 @@ function ArchiveSearch({ query }: { query: string }) {
       setLoading(false);
       setProgress(100);
       if (found.length === 0) {
-        setResults([{ subject: `No threads found for “${query}” in the archive. Try browser search for wider indexing.`, url: "", month: "" }]);
+        setResults([{ subject: `No quick archive hits found for “${query}”. Use browser search for broader results.`, url: "", month: "" }]);
       }
     }, 700);
 
@@ -131,9 +127,9 @@ function ArchiveSearch({ query }: { query: string }) {
       <div className="px-4 py-3 bg-primary/5 border-b border-primary/10">
         <div className="flex items-center justify-between mb-1">
           <p className="text-xs font-semibold text-primary">📚 Advaita-L Archive — “{query}”</p>
-          {loading && <span className="text-[10px] text-muted-foreground">Searching archive subjects… {progress}%</span>}
+          {loading && <span className="text-[10px] text-muted-foreground">Checking recent archive threads… {progress}%</span>}
         </div>
-        {loading && <p className="text-[10px] text-muted-foreground mb-1">Scanned {monthsScanned} of {ARCHIVE_MONTHS.length} months</p>}
+        {loading && <p className="text-[10px] text-muted-foreground mb-1">Scanned {monthsScanned} of {QUICK_ARCHIVE_MONTHS.length} recent months</p>}
         {loading && (
           <div className="h-1 bg-muted rounded-full overflow-hidden">
             <div className="h-full bg-primary/60 rounded-full transition-all" style={{ width: `${progress}%` }} />
@@ -160,12 +156,12 @@ function ArchiveSearch({ query }: { query: string }) {
         )}
       </div>
       <div className="px-4 py-2 border-t border-border/50 flex items-center justify-between">
-        <span className="text-[10px] text-muted-foreground">Searching subject lines across the full Advaita-L archive</span>
+        <span className="text-[10px] text-muted-foreground">Quick in-app check across recent Advaita-L subject lines</span>
         <div className="flex items-center gap-3">
           <a href={`https://www.google.com/search?q=site:lists.advaita-vedanta.org+advaita-l+${encodeURIComponent(query)}`}
             target="_blank" rel="noopener noreferrer"
             className="text-[10px] text-primary/60 hover:text-primary transition-colors">
-            {loading ? "Use browser search for faster results ↗" : "Open browser search ↗"}
+            {loading ? "Switch to browser search ↗" : "Open browser search ↗"}
           </a>
         </div>
       </div>
