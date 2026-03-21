@@ -23,26 +23,51 @@ const ARCHIVE_THREADS: Record<string, { subject: string; url: string; preview: s
   ],
 };
 
-// Recent archive months to search (fetched client-side via CORS proxy)
-const RECENT_MONTHS = [
-  "2026-March", "2026-February", "2026-January",
-  "2025-December", "2025-November", "2025-October",
-  "2025-September", "2025-August", "2025-July",
-  "2025-June", "2025-May", "2025-April",
+const ARCHIVE_START_YEAR = 1998;
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ];
+
+function buildArchiveMonths(startYear: number) {
+  const now = new Date();
+  const months: string[] = [];
+  for (let year = now.getFullYear(); year >= startYear; year--) {
+    for (let month = 11; month >= 0; month--) {
+      if (year === now.getFullYear() && month > now.getMonth()) continue;
+      months.push(`${year}-${MONTH_NAMES[month]}`);
+    }
+  }
+  return months;
+}
+
+// Full archive month list, newest to oldest.
+const ARCHIVE_MONTHS = buildArchiveMonths(ARCHIVE_START_YEAR);
 
 /** Searches the archive directly by fetching monthly subject indexes via CORS proxy */
 function ArchiveSearch({ query }: { query: string }) {
   const [results, setResults] = useState<{ subject: string; url: string; month: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [monthsScanned, setMonthsScanned] = useState(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
-    if (!query.trim() || query.length < 3) { setResults([]); return; }
+    if (!query.trim() || query.length < 3) {
+      requestIdRef.current += 1;
+      setResults([]);
+      setLoading(false);
+      setProgress(0);
+      setMonthsScanned(0);
+      return;
+    }
+
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
+      const requestId = ++requestIdRef.current;
       setLoading(true); setResults([]); setProgress(0);
+      setMonthsScanned(0);
       const q = query.toLowerCase();
 
       // Check curated threads first (instant)
@@ -51,14 +76,20 @@ function ArchiveSearch({ query }: { query: string }) {
       if (curated) {
         setResults(curated.map(t => ({ subject: t.subject, url: t.url, month: "Curated" })));
         setLoading(false);
+        setProgress(100);
+        setMonthsScanned(0);
         return;
       }
 
-      // Fetch recent monthly subject indexes and search them
+      // Fetch monthly subject indexes across the full archive
       const found: { subject: string; url: string; month: string }[] = [];
-      for (let i = 0; i < RECENT_MONTHS.length; i++) {
-        const month = RECENT_MONTHS[i];
-        setProgress(Math.round(((i + 1) / RECENT_MONTHS.length) * 100));
+      const totalMonths = ARCHIVE_MONTHS.length;
+      for (let i = 0; i < totalMonths; i++) {
+        if (requestId !== requestIdRef.current) return;
+        const month = ARCHIVE_MONTHS[i];
+        const scanned = i + 1;
+        setMonthsScanned(scanned);
+        setProgress(Math.round((scanned / totalMonths) * 100));
         try {
           const indexUrl = `https://lists.advaita-vedanta.org/archives/advaita-l/${month}/subject.html`;
           const html = await fetch(`https://corsproxy.io/?${encodeURIComponent(indexUrl)}`).then(r => r.text());
@@ -72,20 +103,25 @@ function ArchiveSearch({ query }: { query: string }) {
                 url: `https://lists.advaita-vedanta.org/archives/advaita-l/${month}/${m[1]}`,
                 month: month.replace("-", " "),
               });
-              if (found.length >= 10) break;
             }
           }
-          if (found.length >= 10) break;
           setResults([...found]); // update incrementally
         } catch { /* skip month on error */ }
       }
 
+      if (requestId !== requestIdRef.current) return;
+
       setLoading(false);
       setProgress(100);
       if (found.length === 0) {
-        setResults([{ subject: `No threads found for “${query}” in recent months. Try the browser search below.`, url: "", month: "" }]);
+        setResults([{ subject: `No threads found for “${query}” in the archive. Try browser search for wider indexing.`, url: "", month: "" }]);
       }
     }, 700);
+
+    return () => {
+      requestIdRef.current += 1;
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [query]);
 
   if (!query.trim() || query.length < 3) return null;
@@ -95,8 +131,9 @@ function ArchiveSearch({ query }: { query: string }) {
       <div className="px-4 py-3 bg-primary/5 border-b border-primary/10">
         <div className="flex items-center justify-between mb-1">
           <p className="text-xs font-semibold text-primary">📚 Advaita-L Archive — “{query}”</p>
-          {loading && <span className="text-[10px] text-muted-foreground">Searching recent months… {progress}%</span>}
+          {loading && <span className="text-[10px] text-muted-foreground">Searching full archive… {progress}%</span>}
         </div>
+        {loading && <p className="text-[10px] text-muted-foreground mb-1">Scanned {monthsScanned} of {ARCHIVE_MONTHS.length} months</p>}
         {loading && (
           <div className="h-1 bg-muted rounded-full overflow-hidden">
             <div className="h-full bg-primary/60 rounded-full transition-all" style={{ width: `${progress}%` }} />
@@ -123,12 +160,21 @@ function ArchiveSearch({ query }: { query: string }) {
         )}
       </div>
       <div className="px-4 py-2 border-t border-border/50 flex items-center justify-between">
-        <span className="text-[10px] text-muted-foreground">Searching recent 12 months of Advaita-L</span>
-        <a href={`https://www.google.com/search?q=site:lists.advaita-vedanta.org+advaita-l+${encodeURIComponent(query)}`}
-          target="_blank" rel="noopener noreferrer"
-          className="text-[10px] text-primary/60 hover:text-primary transition-colors">
-          Full search in browser ↗
-        </a>
+        <span className="text-[10px] text-muted-foreground">Searching entire Advaita-L archive in-app</span>
+        <div className="flex items-center gap-3">
+          {loading && (
+            <a href={`https://www.google.com/search?q=site:lists.advaita-vedanta.org+advaita-l+${encodeURIComponent(query)}`}
+              target="_blank" rel="noopener noreferrer"
+              className="text-[10px] text-primary hover:underline transition-colors">
+              Switch to browser now ↗
+            </a>
+          )}
+          <a href={`https://www.google.com/search?q=site:lists.advaita-vedanta.org+advaita-l+${encodeURIComponent(query)}`}
+            target="_blank" rel="noopener noreferrer"
+            className="text-[10px] text-primary/60 hover:text-primary transition-colors">
+            Full browser search ↗
+          </a>
+        </div>
       </div>
     </div>
   );
