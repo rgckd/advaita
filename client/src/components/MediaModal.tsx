@@ -42,13 +42,94 @@ const ARCHIVE_THREADS: Record<string, { subject: string; author: string; date: s
   ],
 };
 
+/** Fetches and renders an archive thread inline using a CORS proxy */
+function ArchiveThreadReader({ url, onBack }: { url: string; onBack: () => void }) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [content, setContent] = useState<{ subject: string; author: string; date: string; body: string } | null>(null);
+
+  useEffect(() => {
+    setLoading(true); setError(null); setContent(null);
+    // Use corsproxy.io to fetch the archive page
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+    fetch(proxyUrl)
+      .then(r => r.text())
+      .then(html => {
+        // Parse the HTML to extract email content
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+        // Advaita-L archive pages have <pre> tags with the email body
+        const pre = doc.querySelector("pre");
+        const subject = doc.querySelector("h1")?.textContent?.trim() || doc.title || "Archive Thread";
+        // Extract From/Date from the <ul> near the top
+        const lis = Array.from(doc.querySelectorAll("ul li"));
+        const fromLi = lis.find(li => li.textContent?.startsWith("From:"))?.textContent?.replace("From:", "").trim() || "";
+        const dateLi = lis.find(li => li.textContent?.startsWith("Date:"))?.textContent?.replace("Date:", "").trim() || "";
+        const body = pre?.textContent?.trim() || "Could not extract thread body. Please open the link directly.";
+        setContent({ subject, author: fromLi, date: dateLi, body });
+        setLoading(false);
+      })
+      .catch(err => {
+        setError("Could not load the thread. Please open it directly.");
+        setLoading(false);
+      });
+  }, [url]);
+
+  return (
+    <div className="flex flex-col h-full bg-background overflow-hidden">
+      <div className="flex items-center gap-3 px-5 py-3 border-b border-border bg-muted/20 flex-shrink-0">
+        <button onClick={onBack} className="text-xs text-primary hover:underline">← Back to discussions</button>
+        <a href={url} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs text-muted-foreground hover:text-primary">
+          Open in archive ↗
+        </a>
+      </div>
+      <div className="flex-1 overflow-auto p-5 sm:p-7">
+        {loading && (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <div className="text-2xl mb-2">...</div>
+              <p className="text-sm text-muted-foreground">Loading thread from archive...</p>
+            </div>
+          </div>
+        )}
+        {error && (
+          <div className="p-4 bg-card border border-border rounded-xl">
+            <p className="text-sm text-muted-foreground mb-3">{error}</p>
+            <a href={url} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:opacity-90">
+              Open in archive ↗
+            </a>
+          </div>
+        )}
+        {content && (
+          <div className="max-w-2xl">
+            <h2 className="font-serif text-base font-semibold text-foreground mb-1 leading-snug">{content.subject}</h2>
+            <div className="flex gap-4 mb-5">
+              {content.author && <p className="text-xs text-muted-foreground">{content.author}</p>}
+              {content.date && <p className="text-xs text-muted-foreground">{content.date}</p>}
+            </div>
+            <pre className="text-sm text-foreground leading-relaxed whitespace-pre-wrap font-sans bg-card border border-border rounded-xl p-4">
+              {content.body}
+            </pre>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function TextViewer({ item }: { item: Extract<MediaItem, { kind: "text" }> }) {
-  const [showArchive, setShowArchive] = useState(false);
+  const [activeThread, setActiveThread] = useState<string | null>(null);
   const query = item.archiveQuery?.toLowerCase().replace(/ /g, "-") || "";
   const threads = ARCHIVE_THREADS[query] || ARCHIVE_THREADS[item.archiveQuery?.toLowerCase() || ""] || [];
   const googleSearchUrl = item.archiveQuery
     ? `https://www.google.com/search?q=site:lists.advaita-vedanta.org+advaita-l+${encodeURIComponent(item.archiveQuery)}`
     : null;
+
+  // When a thread is active, show the inline reader (no notes panel needed — handled by parent)
+  if (activeThread) {
+    return <ArchiveThreadReader url={activeThread} onBack={() => setActiveThread(null)} />;
+  }
 
   return (
     <div className="flex flex-col h-full bg-background overflow-auto">
@@ -63,13 +144,13 @@ function TextViewer({ item }: { item: Extract<MediaItem, { kind: "text" }> }) {
         </div>
       </div>
 
-      {/* Archive section — curated threads + Google search link */}
+      {/* Archive section — curated threads, click to read inline */}
       {item.archiveQuery && (
         <div className="p-6 sm:p-8">
           <div className="max-w-2xl mx-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-serif text-sm font-semibold text-foreground">
-                📚 Advaita-L Archive — related discussions on {item.archiveQuery}
+                📚 Advaita-L Archive — related discussions
               </h3>
               {googleSearchUrl && (
                 <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer"
@@ -82,16 +163,19 @@ function TextViewer({ item }: { item: Extract<MediaItem, { kind: "text" }> }) {
             {threads.length > 0 ? (
               <div className="space-y-3">
                 {threads.map((t, i) => (
-                  <a key={i} href={t.url} target="_blank" rel="noopener noreferrer"
-                    className="block p-4 bg-card border border-border rounded-xl hover:border-primary/40 hover:bg-primary/5 transition-colors group">
+                  <button
+                    key={i}
+                    onClick={() => setActiveThread(t.url)}
+                    className="w-full text-left p-4 bg-card border border-border rounded-xl hover:border-primary/40 hover:bg-primary/5 transition-colors group"
+                  >
                     <div className="flex items-start justify-between gap-3 mb-1">
                       <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors leading-snug">{t.subject}</p>
                       <span className="text-[10px] text-muted-foreground flex-shrink-0">{t.date}</span>
                     </div>
                     <p className="text-xs text-muted-foreground mb-1">{t.author}</p>
                     <p className="text-xs text-muted-foreground/80 italic leading-relaxed line-clamp-2">{t.preview}</p>
-                    <p className="text-[10px] text-primary/60 mt-1.5">🔗 Opens in archive →</p>
-                  </a>
+                    <p className="text-[10px] text-primary mt-1.5">📖 Read this thread →</p>
+                  </button>
                 ))}
               </div>
             ) : (
