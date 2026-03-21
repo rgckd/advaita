@@ -328,13 +328,15 @@ export default function SelfStudy() {
           {!concept && (
             /* Library overview — show all texts grouped by level */
             <div className="space-y-5">
-              {(["jijnasu", "sadhaka", "mumukshu"] as SeekerLevel[]).map(lvl => {
+              {(["jijnasu", "sadhaka", "mumukshu"] as SeekerLevel[])
+                .filter(lvl => filterLevel === "all" || filterLevel === lvl)
+                .map(lvl => {
                 const lvlLabel: Record<SeekerLevel, string> = { jijnasu: "Jij\u00f1\u0101su", sadhaka: "S\u0101dhaka", mumukshu: "Mumuk\u1e63u" };
                 // Collect all texts for this level across all concepts
                 const textsForLevel = Object.entries(READINGS).flatMap(([conceptId, readingGroups]) => {
                   const group = readingGroups.find(g => g.level === lvl);
                   return (group?.texts || []).map(t => ({ ...t, conceptId }));
-                }).filter(t => filterLevel === "all" || t.level === lvl);
+                });
                 if (textsForLevel.length === 0) return null;
                 return (
                   <div key={lvl}>
@@ -345,9 +347,9 @@ export default function SelfStudy() {
                     </div>
                     <div className="space-y-3">
                       {textsForLevel.map((text, i) => (
-                        <div key={i} className="bg-card border border-border rounded-xl overflow-hidden">
+                        <div key={i} className="bg-card border border-border rounded-xl overflow-hidden group">
                           <div className="px-4 py-3 border-b border-border bg-muted/20 flex items-start justify-between gap-2">
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <h2 className="font-serif text-sm font-semibold text-foreground">{text.title}</h2>
                                 <Link href={`/self-study/${text.conceptId}`}>
@@ -355,6 +357,27 @@ export default function SelfStudy() {
                                 </Link>
                               </div>
                               <p className="text-xs text-muted-foreground mt-0.5">{text.source}</p>
+                            </div>
+                            <div className="flex gap-2 flex-shrink-0">
+                              <button
+                                onClick={() => setMediaItem({
+                                  kind: "pdf",
+                                  title: text.title,
+                                  dataUrl: `data:text/plain;base64,${btoa(unescape(encodeURIComponent(`${text.title}\n${text.source}\n\n"${text.excerpt}"`)))}`,
+                                  mimeType: "text/plain"
+                                })}
+                                className="px-3 py-1 bg-primary text-primary-foreground rounded-lg text-xs hover:opacity-90"
+                              >
+                                Read
+                              </button>
+                              <a
+                                href={`https://www.google.com/search?q=site:lists.advaita-vedanta.org+advaita-l+${encodeURIComponent(text.conceptId.replace("-", "+"))}`}
+                                target="_blank" rel="noopener noreferrer"
+                                className="px-3 py-1 bg-card border border-border text-muted-foreground rounded-lg text-xs hover:text-primary hover:border-primary/40 transition-colors"
+                                title="Search Advaita-L archive"
+                              >
+                                Archive
+                              </a>
                             </div>
                           </div>
                           <div className="px-4 py-3">
@@ -376,13 +399,24 @@ export default function SelfStudy() {
           {allTexts.map((text, i) => (
             <div key={i} className="bg-card border border-border rounded-xl overflow-hidden">
               <div className="px-5 py-3 border-b border-border bg-muted/20 flex items-start justify-between gap-2">
-                <div>
+                <div className="flex-1 min-w-0">
                   <h2 className="font-serif text-sm font-semibold text-foreground">{text.title}</h2>
                   <p className="text-xs text-muted-foreground mt-0.5">{text.source}</p>
                 </div>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${levelBadge[text.level]}`}>
-                  {levelLabel[text.level]}
-                </span>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${levelBadge[text.level]}`}>{levelLabel[text.level]}</span>
+                  <button
+                    onClick={() => setMediaItem({
+                      kind: "pdf",
+                      title: text.title,
+                      dataUrl: `data:text/plain;base64,${btoa(unescape(encodeURIComponent(`${text.title}\n${text.source}\n\n"${text.excerpt}"`)))}`,
+                      mimeType: "text/plain"
+                    })}
+                    className="px-3 py-1 bg-primary text-primary-foreground rounded-lg text-xs hover:opacity-90"
+                  >
+                    Read
+                  </button>
+                </div>
               </div>
               <div className="px-5 py-4">
                 <blockquote className="font-serif text-sm italic leading-relaxed text-foreground border-l-4 border-primary/40 pl-4">
@@ -411,12 +445,14 @@ export default function SelfStudy() {
         <div className="space-y-4">
           {!concept && (
             <div className="space-y-4">
-              {(["jijnasu", "sadhaka", "mumukshu"] as SeekerLevel[]).map(lvl => {
+              {(["jijnasu", "sadhaka", "mumukshu"] as SeekerLevel[])
+                .filter(lvl => filterLevel === "all" || filterLevel === lvl)
+                .map(lvl => {
                 const lvlLabel: Record<SeekerLevel, string> = { jijnasu: "Jij\u00f1\u0101su", sadhaka: "S\u0101dhaka", mumukshu: "Mumuk\u1e63u" };
                 const videosForLevel = Object.entries(READINGS).flatMap(([conceptId, readingGroups]) => {
                   const group = readingGroups.find(g => g.level === lvl);
                   return (group?.videos || []).map(v => ({ ...v, conceptId }));
-                }).filter(v => filterLevel === "all" || v.level === lvl);
+                });
                 if (videosForLevel.length === 0) return null;
                 return (
                   <div key={lvl}>

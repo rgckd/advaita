@@ -77,14 +77,14 @@ export default function ConceptDetail() {
 
           {/* Action buttons */}
           <div className="flex gap-3 flex-wrap">
-            <Link href={`/read/${concept.id}`}>
+            <Link href={`/self-study/${concept.id}`}>
               <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:opacity-90 transition-opacity" data-testid="button-read-listen">
-                📚 Read & Listen
+                📜 Study texts & videos
               </button>
             </Link>
             <Link href="/study-map">
               <button className="px-4 py-2 bg-card border border-border text-foreground rounded-lg text-sm hover:bg-muted transition-colors" data-testid="button-add-to-map">
-                🗺 Add to Study Map
+                🕸 See on Study Map
               </button>
             </Link>
             <Link href="/assessment">

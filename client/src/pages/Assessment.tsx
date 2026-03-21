@@ -234,8 +234,8 @@ export default function Assessment() {
 
           <div className="flex gap-3 justify-center flex-wrap">
             <button onClick={reset} className="px-5 py-2 bg-muted text-foreground rounded-lg text-sm hover:bg-muted/80" data-testid="button-retake">Try Again</button>
-            <Link href="/go-deeper">
-              <button className="px-5 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:opacity-90 transition-opacity" data-testid="button-go-deeper">Go Deeper →</button>
+            <Link href="/self-study">
+              <button className="px-5 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:opacity-90 transition-opacity" data-testid="button-go-deeper">Continue Studying →</button>
             </Link>
           </div>
         </div>

@@ -68,7 +68,7 @@ function AppShell() {
   // Single unified nav — logo click = Home, no separate Home item, no Go Deeper
   const navItems = [
     { href: "/explore",     label: "Explore",     icon: "🔎" }, // magnifying glass — inquiry/search
-    { href: "/study-map",   label: "Study Maps",  icon: "☉" },    // sun/mandala — interconnected whole
+    { href: "/study-map",   label: "Study Maps",  icon: "🕸" },  // spider web — interconnected knowledge web
     { href: "/self-study",  label: "Self-study",  icon: "📜" }, // scroll — classical texts
     { href: "/diary",       label: "Reflection",  icon: "✍️" }, // writing — contemplative reflection
     { href: "/assessment",  label: "Assessment",  icon: "⚖️" },  // scales — discernment/viveka
