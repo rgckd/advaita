@@ -176,7 +176,8 @@ function ArchiveSearch({ query }: { query: string }) {
                     title: r.subject,
                     content: `Thread: ${r.subject}\n\nDate: ${r.month}\n\nThis is a discussion from the Advaita-L mailing list. Click "Read" to view the full thread.`,
                     source: "Advaita-L Archive",
-                    url: r.url,
+                    threadUrl: r.url,
+                    archiveQuery: query,
                   })}
                   className="px-3 py-1 bg-primary text-primary-foreground rounded-lg text-xs hover:opacity-90"
                 >

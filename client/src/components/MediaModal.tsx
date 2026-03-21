@@ -10,7 +10,7 @@ export type MediaItem =
   | { kind: "youtube"; title: string; youtubeId: string }
   | { kind: "pdf"; title: string; dataUrl: string; mimeType?: string }
   | { kind: "url"; title: string; url: string }
-  | { kind: "text"; title: string; content: string; source?: string; archiveQuery?: string };
+  | { kind: "text"; title: string; content: string; source?: string; archiveQuery?: string; threadUrl?: string };
 
 /**
  * TextViewer — renders a text excerpt with proper Unicode, plus dynamic archive search.
@@ -208,7 +208,7 @@ function ArchiveSearchResults({ query, onSelectThread, onBack }: {
 }
 
 function TextViewer({ item }: { item: Extract<MediaItem, { kind: "text" }> }) {
-  const [activeThread, setActiveThread] = useState<string | null>(null);
+  const [activeThread, setActiveThread] = useState<string | null>(item.threadUrl || null);
   const [showSearch, setShowSearch] = useState(false);
   const query = item.archiveQuery?.toLowerCase().replace(/ /g, "-") || "";
   const threads = ARCHIVE_THREADS[query] || ARCHIVE_THREADS[item.archiveQuery?.toLowerCase() || ""] || [];
