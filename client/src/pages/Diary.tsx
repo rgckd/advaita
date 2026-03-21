@@ -1,8 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { store, subscribe, type ReflectionWithAttachment, type FileAttachment } from "@/lib/localStore";
 import { Link } from "wouter";
 import { CONCEPTS } from "./Explore";
 import { AttachmentPicker, AttachmentDisplay } from "@/components/AttachmentPicker";
+
+// Opening prompts per concept — shown as soon as the user selects a concept
+const OPENING_PROMPTS: Record<string, string> = {
+  Maya:       "What does Maya mean to you right now — not as a concept, but as something you notice in your own experience?",
+  Atman:      "When you turn attention toward the one who is reading this — what do you find? Start there.",
+  Brahman:    "If Brahman is the ground of all being, what does that mean for the one asking this question?",
+  Avidya:     "What is the one assumption about yourself that feels most solid, most certain — and what if that is Avidya?",
+  Adhyasa:    "Where do you notice yourself superimposing a story onto something neutral today?",
+  "Ajata Vada": "If nothing was ever truly born — what changes? What remains? Let this sit and write what arises.",
+  General:    "What is the question that won't leave you alone right now? Start with that.",
+};
+
+function getOpeningPrompt(concept: string): string {
+  return OPENING_PROMPTS[concept] || `What is alive in you around ${concept} today? Begin anywhere.`;
+}
 
 export default function Diary() {
   const [reflections, setReflections] = useState<ReflectionWithAttachment[]>(store.getReflections());
@@ -11,7 +26,31 @@ export default function Diary() {
   const [attachment, setAttachment] = useState<FileAttachment | null>(null);
   const [saved, setSaved] = useState(false);
 
+  // AI assistance state
+  const [aiMessages, setAiMessages] = useState<{ role: "ai" | "user"; text: string }[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [showAi, setShowAi] = useState(true);
+  const aiEndRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => subscribe(() => setReflections(store.getReflections())), []);
+
+  // When concept changes, reset AI with an opening prompt
+  useEffect(() => {
+    setAiMessages([{ role: "ai", text: getOpeningPrompt(selectedConcept) }]);
+  }, [selectedConcept]);
+
+  // Auto-scroll AI messages
+  useEffect(() => {
+    aiEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [aiMessages]);
+
+  const askAi = async () => {
+    if (aiLoading) return;
+    setAiLoading(true);
+    const reply = await store.aiDiaryPrompt(selectedConcept, content);
+    setAiMessages(prev => [...prev, { role: "ai", text: reply }]);
+    setAiLoading(false);
+  };
 
   const save = () => {
     if (!content.trim() && !attachment) return;
@@ -22,6 +61,7 @@ export default function Diary() {
     setContent("");
     setAttachment(null);
     setSaved(true);
+    setAiMessages([{ role: "ai", text: getOpeningPrompt(selectedConcept) }]);
     setTimeout(() => setSaved(false), 3000);
   };
 
@@ -31,17 +71,27 @@ export default function Diary() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-10">
-      <div className="mb-8">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <div className="mb-6">
         <h1 className="font-serif text-2xl font-bold text-foreground mb-1">Reflection Diary</h1>
         <p className="text-sm text-muted-foreground">Your personal timeline of insights and contemplations.</p>
       </div>
 
       <div className="bg-card border border-border rounded-xl overflow-hidden mb-8">
-        <div className="px-5 py-4 border-b border-border bg-muted/20">
+        <div className="px-5 py-4 border-b border-border bg-muted/20 flex items-center justify-between">
           <h2 className="font-serif text-sm font-semibold text-foreground">New Reflection</h2>
+          <button
+            onClick={() => setShowAi(v => !v)}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium border transition-colors ${
+              showAi ? "bg-primary/10 text-primary border-primary/30" : "bg-card text-muted-foreground border-border hover:text-foreground"
+            }`}
+          >
+            <span>✨</span> AI Guide {showAi ? "on" : "off"}
+          </button>
         </div>
+
         <div className="p-5 space-y-4">
+          {/* Concept selector */}
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Concept explored</label>
             <select value={selectedConcept} onChange={e => setSelectedConcept(e.target.value)}
@@ -51,13 +101,66 @@ export default function Diary() {
               <option value="General">General</option>
             </select>
           </div>
+
+          {/* AI assistant panel */}
+          {showAi && (
+            <div className="rounded-xl border border-primary/20 bg-primary/5 overflow-hidden">
+              {/* AI messages */}
+              <div className="px-4 py-3 space-y-2.5 max-h-40 overflow-y-auto" ref={aiEndRef}>
+                {aiMessages.map((msg, i) => (
+                  <div key={i} className={`flex gap-2 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
+                    {msg.role === "ai" && (
+                      <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-[9px] text-primary-foreground font-bold">AI</span>
+                      </div>
+                    )}
+                    <div className={`text-xs leading-relaxed rounded-lg px-3 py-2 max-w-[85%] ${
+                      msg.role === "ai"
+                        ? "bg-card border border-border text-foreground font-serif italic"
+                        : "bg-primary/20 text-foreground"
+                    }`}>
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+                {aiLoading && (
+                  <div className="flex gap-2">
+                    <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                      <span className="text-[9px] text-primary-foreground font-bold">AI</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground bg-card border border-border rounded-lg px-3 py-2 italic">
+                      reflecting…
+                    </div>
+                  </div>
+                )}
+              </div>
+              {/* Ask AI button */}
+              <div className="px-4 pb-3 flex items-center justify-between border-t border-primary/10 pt-2">
+                <p className="text-[10px] text-muted-foreground">
+                  {content.length > 20 ? "Write more, then ask for a deeper prompt" : "Write something, then ask AI to help you go deeper"}
+                </p>
+                <button
+                  onClick={askAi}
+                  disabled={aiLoading || content.length < 10}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:opacity-90 disabled:opacity-40 transition-opacity"
+                >
+                  ✨ Ask AI
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Reflection textarea */}
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Your reflection</label>
-            <textarea value={content} onChange={e => setContent(e.target.value)}
-              placeholder="What did you explore? What questions arose? What feels closer to clarity?"
-              rows={5}
+            <textarea
+              value={content}
+              onChange={e => setContent(e.target.value)}
+              placeholder={showAi ? "Start writing… the AI companion will guide you deeper." : "What did you explore? What questions arose? What feels closer to clarity?"}
+              rows={6}
               className="w-full px-3 py-2.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none leading-relaxed"
-              data-testid="textarea-reflection" />
+              data-testid="textarea-reflection"
+            />
           </div>
 
           {/* Attachment */}
@@ -65,16 +168,24 @@ export default function Diary() {
 
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground">{content.length} characters</p>
-            <button onClick={save} disabled={!content.trim() && !attachment}
+            <button
+              onClick={save}
+              disabled={!content.trim() && !attachment}
               className="px-5 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
-              data-testid="button-save-reflection">
+              data-testid="button-save-reflection"
+            >
               Save Reflection
             </button>
           </div>
-          {saved && <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/40 rounded-lg text-xs text-green-700 dark:text-green-300">✓ Reflection saved.</div>}
+          {saved && (
+            <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/40 rounded-lg text-xs text-green-700 dark:text-green-300">
+              ✓ Reflection saved.
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Diary timeline */}
       <div>
         <h2 className="font-serif text-base font-semibold mb-4 text-foreground">Your Diary</h2>
         {reflections.length === 0 && (
