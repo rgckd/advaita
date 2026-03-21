@@ -217,3 +217,28 @@
     background-image: radial-gradient(circle at 50% 50%, hsl(25 82% 49% / 0.04) 0%, transparent 70%);
   }
 }
+
+/* ─── Seeker level color themes ──────────────────────────────────────────────
+   Applied via data-level attribute on <html> element.
+   Jijñāsu  = warm amber (curious, open)
+   Sādhaka  = deeper saffron-orange (disciplined)
+   Mumukṣu  = deep crimson-saffron (ardent seeker of liberation)
+ */
+:root[data-level="jijnasu"] {
+  --primary: 35 85% 52%;        /* warm amber */
+  --ring: 35 85% 52%;
+  --sidebar-primary: 35 85% 52%;
+  --sidebar-ring: 35 85% 52%;
+}
+:root[data-level="sadhaka"] {
+  --primary: 25 82% 49%;        /* saffron orange (default) */
+  --ring: 25 82% 49%;
+  --sidebar-primary: 25 82% 49%;
+  --sidebar-ring: 25 82% 49%;
+}
+:root[data-level="mumukshu"] {
+  --primary: 14 75% 42%;        /* deep crimson-saffron */
+  --ring: 14 75% 42%;
+  --sidebar-primary: 14 75% 42%;
+  --sidebar-ring: 14 75% 42%;
+}

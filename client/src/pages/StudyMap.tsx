@@ -197,11 +197,14 @@ export default function StudyMap() {
           </p>
         </div>
         <div className="flex gap-1.5 flex-wrap">
-          {Object.entries(NODE_COLORS).map(([level, color]) => (
-            <span key={level} className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-card border border-border text-xs text-muted-foreground">
-              <span className="w-2 h-2 rounded-full" style={{ background: color }} />{level}
-            </span>
-          ))}
+          {Object.entries(NODE_COLORS).map(([level, color]) => {
+            const label = { "Foundation": "Jijñāsu", "Intermediate": "Sādhaka", "Advanced": "Mumukṣu", "Practice": "Practice" }[level] || level;
+            return (
+              <span key={level} className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-card border border-border text-xs text-muted-foreground">
+                <span className="w-2 h-2 rounded-full" style={{ background: color }} />{label}
+              </span>
+            );
+          })}
         </div>
       </div>
 
@@ -324,7 +327,12 @@ export default function StudyMap() {
               <div className={`p-4 border-2 rounded-xl ${concept?.color || "bg-card border-border"}`}>
                 <div className="flex items-start justify-between mb-1">
                   <h2 className={`font-serif text-lg font-bold ${concept?.accent || "text-foreground"}`}>{selectedNode.label}</h2>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-background/60 border border-border text-muted-foreground">{selectedNode.level}</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-background/60 border border-border text-muted-foreground">{{
+                    "Foundation": "Jijñāsu",
+                    "Intermediate": "Sādhaka",
+                    "Advanced": "Mumukṣu",
+                    "Practice": "Practice"
+                  }[selectedNode.level] || selectedNode.level}</span>
                 </div>
                 <p className="text-xs text-muted-foreground italic mb-2">{concept?.tagline}</p>
                 <p className="text-xs text-foreground leading-relaxed line-clamp-4">{concept?.summary}</p>
@@ -349,7 +357,17 @@ export default function StudyMap() {
             </>
           ) : (
             <div className="p-6 bg-card border border-border rounded-xl text-center">
-              <p className="text-4xl mb-3">🗺</p>
+              {/* Network/graph icon — more appropriate than world map */}
+              <svg className="w-12 h-12 mx-auto mb-3 text-primary/60" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <circle cx="24" cy="10" r="4" fill="currentColor" opacity="0.7"/>
+                <circle cx="10" cy="34" r="4" fill="currentColor" opacity="0.7"/>
+                <circle cx="38" cy="34" r="4" fill="currentColor" opacity="0.7"/>
+                <circle cx="24" cy="28" r="3" fill="currentColor" opacity="0.4"/>
+                <line x1="24" y1="14" x2="24" y2="25"/>
+                <line x1="24" y1="25" x2="13" y2="31"/>
+                <line x1="24" y1="25" x2="35" y2="31"/>
+                <line x1="13" y1="31" x2="35" y2="31" strokeDasharray="3 3" opacity="0.4"/>
+              </svg>
               <p className="font-serif text-sm font-medium text-foreground mb-1">Your Knowledge Graph</p>
               <p className="text-xs text-muted-foreground">Click any concept node to explore its details and connections.</p>
             </div>
@@ -365,7 +383,12 @@ export default function StudyMap() {
                   data-testid={`list-node-${n.id}`}>
                   <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: NODE_COLORS[n.level], opacity: n.explored ? 1 : 0.4 }} />
                   {n.label}
-                  <span className="text-[10px] text-muted-foreground">{n.level}</span>
+                  <span className="text-[10px] text-muted-foreground">{{
+                    "Foundation": "Jijñāsu",
+                    "Intermediate": "Sādhaka",
+                    "Advanced": "Mumukṣu",
+                    "Practice": "Practice"
+                  }[n.level] || n.level}</span>
                   {n.explored && <span className="ml-auto text-green-500">✓</span>}
                 </button>
               ))}

@@ -52,19 +52,27 @@ function AppShell() {
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
   }, [dark]);
-  useEffect(() => subscribe(() => setSeekerLevel(store.getLevel())), []);
+  useEffect(() => subscribe(() => {
+    const lvl = store.getLevel();
+    setSeekerLevel(lvl);
+    document.documentElement.setAttribute("data-level", lvl);
+  }), []);
+  // Set initial level on mount
+  useEffect(() => {
+    document.documentElement.setAttribute("data-level", store.getLevel());
+  }, []);
 
   // Close sidebar on route change (mobile)
   useEffect(() => { setSidebarOpen(false); }, [location]);
 
   // Single unified nav — logo click = Home, no separate Home item, no Go Deeper
   const navItems = [
-    { href: "/explore",     label: "Explore",     icon: "🔍" },
-    { href: "/study-map",   label: "Study Maps",  icon: "🗺" },
-    { href: "/self-study",  label: "Self-study",  icon: "📚" },
-    { href: "/diary",       label: "Reflection",  icon: "🔥" },
-    { href: "/assessment",  label: "Assessment",  icon: "🎯" },
-    { href: "/satsang",     label: "Satsang",     icon: "🕉" },
+    { href: "/explore",     label: "Explore",     icon: "🔎" }, // magnifying glass — inquiry/search
+    { href: "/study-map",   label: "Study Maps",  icon: "☉" },    // sun/mandala — interconnected whole
+    { href: "/self-study",  label: "Self-study",  icon: "📜" }, // scroll — classical texts
+    { href: "/diary",       label: "Reflection",  icon: "✍️" }, // writing — contemplative reflection
+    { href: "/assessment",  label: "Assessment",  icon: "⚖️" },  // scales — discernment/viveka
+    { href: "/satsang",     label: "Satsang",     icon: "🕉" }, // om — community gathering
   ];
 
   if (isFullScreen) {
