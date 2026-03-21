@@ -6,7 +6,8 @@ import { store, subscribe, type Note } from "@/lib/localStore";
 // to avoid confusion between "Quick Notes" (private scratchpad) and the page's
 // primary action (Reflection Diary entry / Satsang thread).
 // Suppress on pages that have their own writing surface
-const SUPPRESS_ON = ["/diary", "/satsang"];
+// Notes not useful on: pages with own writing form, Home (no reading context), Assessment (test-taking)
+const SUPPRESS_ON = ["/diary", "/satsang", "/launch", "/assessment"];
 
 // Derive a human-readable context label from the current route
 function routeLabel(location: string): string {

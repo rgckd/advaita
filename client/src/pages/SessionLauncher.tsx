@@ -82,7 +82,7 @@ const LEARNING_PATH = [
 export default function SessionLauncher() {
   const [reflections, setReflections] = useState<ReflectionWithAttachment[]>(store.getReflections());
   const [seekerLevel, setSeekerLevel] = useState<SeekerLevel>(store.getLevel());
-  const [showIntro, setShowIntro] = useState(true);
+  const [showIntro, setShowIntro] = useState(false); // collapsed by default, user can expand
   const [showPath, setShowPath] = useState(true); // open by default — key orientation element
 
   useEffect(() => subscribe(() => {
@@ -103,39 +103,38 @@ export default function SessionLauncher() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
-      {/* Advaita + levels intro — dismissable, shown once */}
+      {/* Advaita + levels intro — collapsed by default, expandable */}
+      <div className="mb-5 bg-card border border-primary/20 rounded-xl overflow-hidden">
+        <button
+          onClick={() => setShowIntro(v => !v)}
+          className="w-full flex items-center justify-between px-5 py-3 text-left hover:bg-primary/5 transition-colors"
+        >
+          <p className="text-xs font-semibold text-primary">About adv.ai.ta — Advaita Vedanta AI companion</p>
+          <span className="text-muted-foreground text-xs ml-2">{showIntro ? "▲" : "▼"}</span>
+        </button>
       {showIntro && (
-        <div className="mb-6 bg-card border border-primary/20 rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-border/50 bg-primary/5 flex items-start justify-between gap-3">
-            <div>
-              <p className="font-serif text-sm font-semibold text-foreground">Welcome to adv.ai.ta — your AI companion for Advaita Vedanta</p>
-            </div>
-            <button onClick={() => setShowIntro(false)} className="text-muted-foreground hover:text-foreground text-sm flex-shrink-0">✕</button>
-          </div>
-          <div className="px-5 py-4 space-y-3 text-sm text-foreground leading-relaxed">
-            <p>
-              <strong>Advaita Vedanta</strong> is the ancient non-dual philosophy of India — the teaching that the individual self (Ātman) and ultimate reality (Brahman) are not two separate things, but one undivided consciousness. This is the central insight of <strong>Adi Shankaracharya</strong> (8th century CE).
-            </p>
-            {/* Level explanations */}
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {LEVELS.map((l, i) => (
-                <div key={l.id} className={`rounded-lg p-3 border ${seekerLevel === l.id ? "border-primary/50 bg-primary/5" : "border-border bg-muted/20"}`}>
-                  <div className="flex items-center gap-2 mb-1">
-                    {i < 2 && <span className="text-[10px] text-muted-foreground">{"→".repeat(i)}</span>}
-                    <span className="font-serif text-xs font-bold text-foreground">{l.roman}</span>
-                    <span className="text-xs text-muted-foreground">({l.label})</span>
-                    {seekerLevel === l.id && <span className="ml-auto text-[10px] text-primary font-bold">← You</span>}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">{l.description.split("—")[1]?.trim() || l.description}</p>
+        <div className="border-t border-primary/10 px-5 py-4 space-y-3 text-sm text-foreground leading-relaxed">
+          <p>
+            <strong>Advaita Vedanta</strong> is the ancient non-dual philosophy of India — the teaching that the individual self (Ātman) and ultimate reality (Brahman) are not two separate things, but one undivided consciousness. This is the central insight of <strong>Adi Shankaracharya</strong> (8th century CE).
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {LEVELS.map((l, i) => (
+              <div key={l.id} className={`rounded-lg p-3 border ${seekerLevel === l.id ? "border-primary/50 bg-primary/5" : "border-border bg-muted/20"}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-serif text-xs font-bold text-foreground">{l.roman}</span>
+                  <span className="text-xs text-muted-foreground">({l.label})</span>
+                  {seekerLevel === l.id && <span className="ml-auto text-[10px] text-primary font-bold">← You</span>}
                 </div>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Your level advances through <Link href="/assessment"><span className="text-primary underline cursor-pointer">assessments</span></Link>. Content across Explore, Study Maps, Self-study, and Reflection is tailored to your current level — you can always choose to view any level.
-            </p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">{l.description.split("—")[1]?.trim() || l.description}</p>
+              </div>
+            ))}
           </div>
+          <p className="text-xs text-muted-foreground">
+            Your level advances through <Link href="/assessment"><span className="text-primary underline cursor-pointer">assessments</span></Link>. Content is tailored to your current level — you can always view any level.
+          </p>
         </div>
       )}
+      </div>{/* end intro container */}
 
       {/* Greeting — only shown when intro is dismissed */}
       <div className="mb-6">
@@ -171,9 +170,12 @@ export default function SessionLauncher() {
         </div>
 
         {lastReflection && (
-          <div className="mt-4 p-4 ai-bubble rounded-lg">
-            <p className="text-xs font-medium text-primary mb-1">Your last reflection — {lastReflection.concept}</p>
-            <p className="text-sm text-foreground line-clamp-2">{lastReflection.content}</p>
+          <div className="mt-3 px-3 py-2 flex items-center gap-2 rounded-lg bg-muted/30 border border-border/50">
+            <span className="text-[10px] text-muted-foreground flex-shrink-0">Last reflection · {lastReflection.concept}</span>
+            <p className="text-xs text-muted-foreground truncate italic">{lastReflection.content}</p>
+            <Link href="/diary" className="flex-shrink-0">
+              <span className="text-[10px] text-primary hover:underline">View →</span>
+            </Link>
           </div>
         )}
       </div>
