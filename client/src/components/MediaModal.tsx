@@ -118,60 +118,59 @@ function ArchiveThreadReader({ url, onBack }: { url: string; onBack: () => void 
   );
 }
 
-/** Fetches archive search results via CORS proxy and shows them as readable thread cards */
+const RECENT_MONTHS_MODAL = [
+  "2026-March", "2026-February", "2026-January",
+  "2025-December", "2025-November", "2025-October",
+  "2025-September", "2025-August", "2025-July",
+];
+
+/** Searches recent archive months directly via CORS proxy (no Google) */
 function ArchiveSearchResults({ query, onSelectThread, onBack }: {
   query: string;
   onSelectThread: (url: string) => void;
   onBack: () => void;
 }) {
   const [loading, setLoading] = useState(true);
-  const [results, setResults] = useState<{ subject: string; url: string; snippet: string }[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [results, setResults] = useState<{ subject: string; url: string; month: string }[]>([]);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    setLoading(true); setError(null);
-    // Fetch the Google search via corsproxy — parse out archive links
-    const searchUrl = `https://www.google.com/search?q=site:lists.advaita-vedanta.org+advaita-l+${encodeURIComponent(query)}`;
-    fetch(`https://corsproxy.io/?${encodeURIComponent(searchUrl)}`)
-      .then(r => r.text())
-      .then(html => {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, "text/html");
-        // Extract result links — Google wraps them in <a> tags inside result divs
-        const anchors = Array.from(doc.querySelectorAll("a[href]")) as HTMLAnchorElement[];
-        const archiveLinks = anchors
-          .filter(a => a.href.includes("lists.advaita-vedanta.org") || a.textContent?.includes("advaita-vedanta"))
-          .map(a => {
-            const url = a.href.replace(/^\/url\?q=/, "").split("&")[0];
-            const subject = a.textContent?.trim() || url;
-            const parent = a.closest("div") || a.parentElement;
-            const snippet = parent?.textContent?.replace(subject, "").trim().slice(0, 120) || "";
-            return { subject, url: decodeURIComponent(url), snippet };
-          })
-          .filter(r => r.url.startsWith("https://lists.advaita-vedanta.org") && r.url.endsWith(".html"))
-          .slice(0, 8);
+    setLoading(true); setResults([]); setProgress(0);
+    const q = query.toLowerCase();
 
-        if (archiveLinks.length > 0) {
-          setResults(archiveLinks);
-        } else {
-          // Fallback: show curated threads for this query
-          const key = query.toLowerCase().replace(/ /g, "-");
-          const curated = ARCHIVE_THREADS[key] || ARCHIVE_THREADS[query.toLowerCase()] || [];
-          setResults(curated.map(t => ({ subject: t.subject, url: t.url, snippet: t.preview })));
-        }
-        setLoading(false);
-      })
-      .catch(() => {
-        // On proxy failure, fall back to curated threads
-        const key = query.toLowerCase().replace(/ /g, "-");
-        const curated = ARCHIVE_THREADS[key] || ARCHIVE_THREADS[query.toLowerCase()] || [];
-        if (curated.length > 0) {
-          setResults(curated.map(t => ({ subject: t.subject, url: t.url, snippet: t.preview })));
-        } else {
-          setError("Could not load search results.");
-        }
-        setLoading(false);
-      });
+    // Check curated first
+    const key = q.replace(/ /g, "-");
+    const curated = ARCHIVE_THREADS[key] || ARCHIVE_THREADS[q];
+    if (curated) {
+      setResults(curated.map(t => ({ subject: t.subject, url: t.url, month: "Curated" })));
+      setLoading(false);
+      return;
+    }
+
+    // Search monthly indexes
+    (async () => {
+      const found: { subject: string; url: string; month: string }[] = [];
+      for (let i = 0; i < RECENT_MONTHS_MODAL.length; i++) {
+        const month = RECENT_MONTHS_MODAL[i];
+        setProgress(Math.round(((i + 1) / RECENT_MONTHS_MODAL.length) * 100));
+        try {
+          const indexUrl = `https://lists.advaita-vedanta.org/archives/advaita-l/${month}/subject.html`;
+          const html = await fetch(`https://corsproxy.io/?${encodeURIComponent(indexUrl)}`).then(r => r.text());
+          const matches = [...html.matchAll(/<A HREF="(\d+\.html)">([^<]+)<\/A>/gi)];
+          for (const m of matches) {
+            const subject = m[2].replace(/\[Advaita-l\]\s*/i, "").trim();
+            if (subject.toLowerCase().includes(q)) {
+              found.push({ subject, url: `https://lists.advaita-vedanta.org/archives/advaita-l/${month}/${m[1]}`, month: month.replace("-", " ") });
+              if (found.length >= 10) break;
+            }
+          }
+          if (found.length >= 10) break;
+          setResults([...found]);
+        } catch { /* skip */ }
+      }
+      if (found.length === 0) setResults([{ subject: `No threads found for "${query}" in recent months.`, url: "", month: "" }]);
+      setLoading(false);
+    })();
   }, [query]);
 
   return (
@@ -181,19 +180,26 @@ function ArchiveSearchResults({ query, onSelectThread, onBack }: {
         <p className="text-xs font-medium text-foreground">Search results for “{query}” in Advaita-L</p>
       </div>
       <div className="flex-1 overflow-auto p-5">
-        {loading && <p className="text-sm text-muted-foreground">Searching archive...</p>}
-        {error && <p className="text-sm text-muted-foreground">{error}</p>}
-        {!loading && !error && results.length === 0 && (
-          <p className="text-sm text-muted-foreground">No results found in archive for this topic.</p>
+        {loading && (
+          <div className="mb-3">
+            <p className="text-xs text-muted-foreground mb-1.5">Scanning archive months… {progress}%</p>
+            <div className="h-1 bg-muted rounded-full overflow-hidden">
+              <div className="h-full bg-primary/60 rounded-full transition-all" style={{ width: `${progress}%` }} />
+            </div>
+          </div>
         )}
         <div className="space-y-3">
           {results.map((r, i) => (
-            <button key={i} onClick={() => onSelectThread(r.url)}
-              className="w-full text-left p-4 bg-card border border-border rounded-xl hover:border-primary/40 hover:bg-primary/5 transition-colors group">
-              <p className="text-sm font-medium text-foreground group-hover:text-primary leading-snug mb-1">{r.subject}</p>
-              {r.snippet && <p className="text-xs text-muted-foreground/80 italic leading-relaxed line-clamp-2">{r.snippet}</p>}
-              <p className="text-[10px] text-primary mt-1.5">📖 Read this thread →</p>
-            </button>
+            r.url ? (
+              <button key={i} onClick={() => onSelectThread(r.url)}
+                className="w-full text-left p-4 bg-card border border-border rounded-xl hover:border-primary/40 hover:bg-primary/5 transition-colors group">
+                <p className="text-sm font-medium text-foreground group-hover:text-primary leading-snug mb-0.5">{r.subject}</p>
+                {r.month && <p className="text-[10px] text-muted-foreground">{r.month}</p>}
+                <p className="text-[10px] text-primary mt-1.5">📖 Read this thread →</p>
+              </button>
+            ) : (
+              <p key={i} className="text-xs text-muted-foreground italic p-2">{r.subject}</p>
+            )
           ))}
         </div>
       </div>
