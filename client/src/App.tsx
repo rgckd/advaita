@@ -17,7 +17,7 @@ import Assessment from "@/pages/Assessment";
 import GoDeeper from "@/pages/GoDeeper";
 import SelfStudy from "@/pages/SelfStudy";
 import NotFound from "@/pages/not-found";
-import { PerplexityAttribution } from "@/components/PerplexityAttribution";
+import { AppFooter } from "@/components/AppFooter";
 import { FloatingNotes } from "@/components/FloatingNotes";
 import { SeekerBadge } from "@/components/SeekerBadge";
 import { store, subscribe } from "@/lib/localStore";
@@ -203,7 +203,7 @@ function AppShell() {
             <Route path="/go-deeper" component={GoDeeper} />
             <Route component={NotFound} />
           </Switch>
-          <PerplexityAttribution />
+          <AppFooter />
         </main>
 
         {/* ── Mobile bottom nav bar ── */}
