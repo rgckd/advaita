@@ -93,10 +93,16 @@ export default function Landing() {
         </div>
       </div>
 
-      <footer className="py-4 text-center text-xs text-muted-foreground border-t border-border">
-        <a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer" className="hover:underline">
-          Created with Perplexity Computer
-        </a>
+      <footer className="py-4 text-center text-xs text-muted-foreground border-t border-border px-4">
+        <p>
+          Prototype only. Information is static and details are not saved.
+        </p>
+        <p className="mt-1">
+          Contact admin for interest, questions, or feedback: {" "}
+          <a href="mailto:rgchandar@gmail.com" className="underline hover:opacity-80">
+            rgchandar@gmail.com
+          </a>
+        </p>
       </footer>
     </div>
   );

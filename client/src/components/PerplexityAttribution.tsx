@@ -1,19 +1,17 @@
 export function PerplexityAttribution() {
-  const buildCommit = import.meta.env.VITE_BUILD_COMMIT || "dev";
-  const buildTimeUtc = import.meta.env.VITE_BUILD_TIME || "";
-
   return (
-    <footer className="w-full py-4 text-center text-xs text-muted-foreground">
-      <a
-        href="https://www.perplexity.ai/computer"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="hover:text-foreground transition-colors"
-      >
-        Created with Perplexity Computer
-      </a>
-      <p className="mt-1 text-[10px] text-muted-foreground/80" data-testid="build-version">
-        Build {buildCommit}{buildTimeUtc ? ` · ${buildTimeUtc}` : ""}
+    <footer className="w-full py-4 text-center text-xs text-muted-foreground border-t border-border px-4">
+      <p>
+        Prototype only. Information is static and details are not saved.
+      </p>
+      <p className="mt-1">
+        Contact admin for interest, questions, or feedback: {" "}
+        <a
+          href="mailto:rgchandar@gmail.com"
+          className="underline hover:text-foreground transition-colors"
+        >
+          rgchandar@gmail.com
+        </a>
       </p>
     </footer>
   );
